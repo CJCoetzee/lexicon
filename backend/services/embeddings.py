@@ -24,11 +24,17 @@ class EmbeddingProvider(Protocol):
 
 
 class GeminiEmbeddingProvider:
-    """Embeddings via Google `text-embedding-004`.
+    """Embeddings via Google's Gemini embedding endpoint.
 
-    Free tier quotas (as of 2025): generous enough for development and demos.
-    The model produces 768-dimensional vectors.
+    Default model: `gemini-embedding-001`. Free tier quotas are generous
+    enough for development and demos. The model produces high-dimensional
+    embeddings well-suited to RAG retrieval.
+
+    Some embedding endpoints reject very large batches; we chunk requests
+    into `BATCH_LIMIT`-sized groups to be safe across model versions.
     """
+
+    BATCH_LIMIT = 100
 
     def __init__(self, api_key: str | None = None, model: str | None = None):
         self._client = genai.Client(api_key=api_key or config.gemini_api_key)
@@ -37,12 +43,15 @@ class GeminiEmbeddingProvider:
     def embed(self, texts: List[str]) -> List[List[float]]:
         if not texts:
             return []
-        result = self._client.models.embed_content(
-            model=self._model,
-            contents=texts,
-        )
-        # The new SDK returns an object with .embeddings, each having .values.
-        return [list(item.values) for item in result.embeddings]
+        all_embeddings: List[List[float]] = []
+        for i in range(0, len(texts), self.BATCH_LIMIT):
+            batch = texts[i : i + self.BATCH_LIMIT]
+            result = self._client.models.embed_content(
+                model=self._model,
+                contents=batch,
+            )
+            all_embeddings.extend(list(item.values) for item in result.embeddings)
+        return all_embeddings
 
 
 _singleton: EmbeddingProvider | None = None

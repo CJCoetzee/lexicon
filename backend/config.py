@@ -30,8 +30,8 @@ class Config:
         )
     )
     max_upload_bytes: int = int(os.getenv("MAX_UPLOAD_BYTES", str(10 * 1024 * 1024)))
-    generation_model: str = os.getenv("GEMINI_GENERATION_MODEL", "gemini-1.5-flash")
-    embedding_model: str = os.getenv("GEMINI_EMBEDDING_MODEL", "text-embedding-004")
+    generation_model: str = os.getenv("GEMINI_GENERATION_MODEL", "gemini-2.5-flash-lite")
+    embedding_model: str = os.getenv("GEMINI_EMBEDDING_MODEL", "gemini-embedding-001")
 
     @property
     def is_configured(self) -> bool:

@@ -11,6 +11,7 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 
 from config import config
+from routes.chat import chat_bp
 from routes.documents import documents_bp
 from routes.health import health_bp
 
@@ -28,6 +29,7 @@ def create_app() -> Flask:
 
     app.register_blueprint(health_bp)
     app.register_blueprint(documents_bp, url_prefix="/api")
+    app.register_blueprint(chat_bp, url_prefix="/api")
 
     @app.errorhandler(413)
     def too_large(_err):

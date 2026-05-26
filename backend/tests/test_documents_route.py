@@ -4,7 +4,7 @@ from __future__ import annotations
 import io
 
 
-def test_upload_text_file_returns_201_and_metadata(client):
+def test_upload_text_file_returns_201_and_metadata(client, fake_rag):
     data = {
         "file": (io.BytesIO(b"Hello, world! This is a test document."), "test.txt"),
     }
@@ -16,6 +16,8 @@ def test_upload_text_file_returns_201_and_metadata(client):
     assert "id" in body
     assert "uploaded_at" in body
     assert "Hello, world!" in body["preview"]
+    assert body["chunks_indexed"] >= 1
+    assert len(fake_rag.indexed_documents) == 1
 
 
 def test_upload_missing_file_returns_400(client):
