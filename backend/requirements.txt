@@ -1,3 +1,7 @@
+# Pinned to the manylinux/MSVC wheel on PyPI to avoid the MINGW-W64
+# Windows wheel that some mirrors ship and that prints scary warnings.
+numpy==1.26.4
+
 flask==3.0.3
 flask-cors==4.0.1
 python-dotenv==1.0.1

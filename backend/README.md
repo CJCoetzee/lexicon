@@ -4,8 +4,11 @@ Flask API for the Lexicon RAG system.
 
 ## Setup
 
+Requires Python 3.11 or 3.12 (not 3.13 — pinned NumPy has no 3.13 wheel yet).
+
 ```bash
-python -m venv .venv
+py -3.12 -m venv .venv       # Windows
+python3.12 -m venv .venv     # macOS/Linux
 source .venv/bin/activate    # macOS/Linux
 .venv\Scripts\activate       # Windows
 pip install -r requirements.txt

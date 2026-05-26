@@ -1,7 +1,12 @@
-"""Document upload endpoints.
+"""Document upload + indexing endpoints.
 
-Sprint 1 scope: accept a file, parse its text, return the extracted text and
-basic metadata. We do NOT yet chunk, embed, or store — that's Sprint 2.
+Sprint 1 scope: parse and return metadata.
+Sprint 2 scope: also chunk, embed, and index into the vector store so the
+document is queryable by /api/chat.
+
+Indexing happens inline on upload — fine for capstone-scale corpora and
+honest about latency; a future improvement (noted in DESIGN.md) is async
+indexing via a job queue.
 """
 from __future__ import annotations
 
@@ -16,6 +21,7 @@ from services.parser import (
     parse_document,
     supported_extensions,
 )
+from services.rag import get_rag_service
 
 logger = logging.getLogger(__name__)
 documents_bp = Blueprint("documents", __name__)
@@ -43,23 +49,35 @@ def upload_document():
             ),
             400,
         )
-    except Exception as exc:  # noqa: BLE001 — we log and return a generic 500
+    except Exception as exc:  # noqa: BLE001 — log and return a generic 500
         logger.exception("Failed to parse uploaded document")
         return jsonify({"error": "parse_failed", "message": str(exc)}), 500
 
     document_id = str(uuid.uuid4())
-    return (
-        jsonify(
-            {
-                "id": document_id,
-                "filename": upload.filename,
-                "char_count": len(text),
-                "uploaded_at": datetime.now(timezone.utc).isoformat(),
-                "preview": text[:500],
-            }
-        ),
-        201,
-    )
+
+    # Index the document. Failures here shouldn't fail the upload — we still
+    # have the parsed text and can re-index later. We surface the indexing
+    # status to the client so the UI can show it.
+    chunks_indexed = 0
+    indexing_error: str | None = None
+    try:
+        rag = get_rag_service()
+        chunks_indexed = rag.index_document(document_id, upload.filename, text)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Failed to index document %s", document_id)
+        indexing_error = str(exc)
+
+    body = {
+        "id": document_id,
+        "filename": upload.filename,
+        "char_count": len(text),
+        "uploaded_at": datetime.now(timezone.utc).isoformat(),
+        "preview": text[:500],
+        "chunks_indexed": chunks_indexed,
+    }
+    if indexing_error:
+        body["indexing_error"] = indexing_error
+    return jsonify(body), 201
 
 
 @documents_bp.get("/documents/supported-types")
