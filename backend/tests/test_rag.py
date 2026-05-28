@@ -1,8 +1,6 @@
 """Tests for the RAG orchestrator using fake providers."""
 from __future__ import annotations
 
-from typing import List
-
 import pytest
 
 from services.rag import RagService
@@ -18,7 +16,7 @@ class FakeEmbeddings:
     def __init__(self):
         self.embed_calls = []
 
-    def embed(self, texts: List[str]) -> List[List[float]]:
+    def embed(self, texts: list[str]) -> list[list[float]]:
         self.embed_calls.append(list(texts))
         # Deterministic dummy vectors: each text -> a 4-d vector based on length
         return [[float(len(t)), 0.0, 0.0, 0.0] for t in texts]
@@ -35,8 +33,8 @@ class FakeGenerator:
 
 
 class FakeStore:
-    def __init__(self, retrieval_results: List[RetrievalResult] | None = None):
-        self.added: List[tuple] = []
+    def __init__(self, retrieval_results: list[RetrievalResult] | None = None):
+        self.added: list[tuple] = []
         self._results = retrieval_results or []
 
     def add_chunks(self, chunks, embeddings):

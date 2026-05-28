@@ -30,6 +30,11 @@ npm-debug.log*
 backend/chroma_data/
 chroma_data/
 
+# Eval reports — only the dataset and runner are version-controlled.
+# Reports are generated and committed selectively when we want to publish them.
+# (Use `git add -f backend/eval/reports/<name>.json` to commit a specific one.)
+backend/eval/reports/*.json
+
 # Uploaded documents (during dev)
 backend/uploads/
 uploads/

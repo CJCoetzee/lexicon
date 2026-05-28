@@ -11,8 +11,6 @@ same interface to compare configurations.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List
-
 
 # Separator order matters — longer / more semantic separators first.
 _SEPARATORS = ["\n\n", "\n", ". ", " ", ""]
@@ -24,7 +22,7 @@ class ChunkConfig:
     chunk_overlap: int = 100
 
 
-def _split_with_separator(text: str, separator: str) -> List[str]:
+def _split_with_separator(text: str, separator: str) -> list[str]:
     if separator == "":
         return list(text)
     if separator == ". ":
@@ -36,9 +34,9 @@ def _split_with_separator(text: str, separator: str) -> List[str]:
     return [p for p in text.split(separator) if p]
 
 
-def _merge_pieces(pieces: List[str], separator: str, config: ChunkConfig) -> List[str]:
+def _merge_pieces(pieces: list[str], separator: str, config: ChunkConfig) -> list[str]:
     """Pack pieces into chunks ≤ chunk_size, joining with the separator."""
-    chunks: List[str] = []
+    chunks: list[str] = []
     current = ""
     for piece in pieces:
         candidate = piece if not current else f"{current}{separator}{piece}"
@@ -63,24 +61,24 @@ def _next_separator(separator: str) -> str:
     return _SEPARATORS[min(idx + 1, len(_SEPARATORS) - 1)]
 
 
-def _recursive_split(text: str, separator: str, config: ChunkConfig) -> List[str]:
+def _recursive_split(text: str, separator: str, config: ChunkConfig) -> list[str]:
     if len(text) <= config.chunk_size:
         return [text]
     pieces = _split_with_separator(text, separator)
     return _merge_pieces(pieces, separator if separator != "" else "", config)
 
 
-def _add_overlap(chunks: List[str], overlap: int) -> List[str]:
+def _add_overlap(chunks: list[str], overlap: int) -> list[str]:
     if overlap <= 0 or len(chunks) <= 1:
         return chunks
     out = [chunks[0]]
-    for prev, curr in zip(chunks, chunks[1:]):
+    for prev, curr in zip(chunks, chunks[1:], strict=False):
         carry = prev[-overlap:] if len(prev) >= overlap else prev
         out.append(carry + curr)
     return out
 
 
-def chunk_text(text: str, config: ChunkConfig | None = None) -> List[str]:
+def chunk_text(text: str, config: ChunkConfig | None = None) -> list[str]:
     """Split text into overlapping chunks suitable for embedding.
 
     Empty / whitespace-only input returns an empty list.

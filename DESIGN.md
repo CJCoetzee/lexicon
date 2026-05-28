@@ -93,8 +93,8 @@ fast and avoids requiring `GEMINI_API_KEY` to merely load a module.
 | Web framework  | Flask                        | Minimal, well-understood, fits the API-only backend we need.                            |
 | Frontend       | React + Vite + Tailwind      | Fast dev loop; Tailwind keeps styling co-located without bespoke CSS files.             |
 | Vector store   | Chroma (embedded)            | Zero infra, persistent on disk, free-tier-deployable. Good enough for a capstone-scale corpus. |
-| Embeddings     | Gemini `text-embedding-004`  | Free tier, 768-dim, good quality. Local sentence-transformers is the eval-harness alternative. |
-| LLM            | Gemini `gemini-1.5-flash`    | Free tier with 1500 req/day, fast, low cost. Provider-Protocol design lets us swap.     |
+| Embeddings     | Gemini `gemini-embedding-001`| Free tier, high-quality embeddings. Provider-Protocol design lets the eval harness A/B against local sentence-transformers. |
+| LLM            | Gemini `gemini-2.5-flash-lite` | Free-tier-friendly Gemini variant, fast, low cost. Provider-Protocol lets us swap.    |
 | Hosting        | Render (free tier)           | One-click GitHub deploy, supports Python web services + static React, persistent disk.  |
 | CI/CD          | GitHub Actions               | Free for public repos, native to GitHub, runs on every PR.                              |
 
@@ -126,16 +126,73 @@ a VPS dwarfs the cost difference for a small-scale internal tool.
    `preview`, `uploaded_at`).
 5. Frontend prepends the descriptor to the visible document list.
 
-### 5.2 Indexing and chat (Sprint 2, planned)
-The full RAG flow will be added in Sprint 2 and will be documented here as
-it lands: chunk → embed → upsert → on query: embed question → top-k
-retrieve → prompt with cited context → return answer with span-level
-citations.
+### 5.2 Indexing and chat (Sprint 2, complete)
+On upload, the document text is chunked using a recursive character splitter
+(`services/chunker.py`) that prefers paragraph and sentence boundaries over
+arbitrary mid-word cuts. Chunks default to 600 characters with 100-character
+overlap; the configuration is a `ChunkConfig` dataclass that the Sprint 3
+eval harness will sweep over.
 
-### 5.3 Evaluation (Sprint 3, planned)
-The eval harness will be documented here once implemented: dataset format,
-metrics (recall@k, faithfulness, answer-relevance, latency, cost), and the
-reproducible runner.
+Each chunk is embedded via Gemini `text-embedding-004` and added to Chroma
+with metadata linking it back to its document and original chunk index.
+Indexing happens inline on upload — fine for capstone-scale corpora and
+honest about user-perceived latency. A future improvement (a job queue with
+a background worker) is noted in Section 9.
+
+For a chat query the flow is:
+
+1. Embed the question (single Gemini call).
+2. Query Chroma for the top-k nearest chunks (cosine).
+3. Build a prompt with `[1]`, `[2]` numbered context blocks and explicit
+   instructions to cite inline and refuse out-of-scope questions.
+4. Generate via `gemini-1.5-flash`.
+5. Parse `[n]` markers out of the answer; return only those citations the
+   model actually referenced (falls back to all retrieved chunks if the
+   model emits no markers).
+
+Latency is reported back to the client per-call so the UI can surface it.
+
+### 5.3 Evaluation (Sprint 3, complete)
+Lives in `backend/eval/` and runs offline against a JSON dataset of
+(documents, questions, expected substrings). The runner:
+
+1. Spins up an isolated Chroma collection in a `TemporaryDirectory` so the
+   live production index is never touched.
+2. Indexes the dataset's documents using the same `RagService.index_document`
+   path used in production — same chunker, same embeddings.
+3. Runs every question through `RagService.answer`, recording the retrieved
+   chunks, answer, and latency per question.
+4. Optionally runs an **LLM-as-judge** faithfulness scorer (`eval/judge.py`)
+   that asks Gemini, with the question + retrieved context + answer, to
+   produce a JSON faithfulness score on 0–1.
+5. Computes summary metrics (`eval/metrics.py`) — recall@1/3/5, MRR,
+   answer-substring match rate, mean faithfulness, p50/p95 latency, and an
+   estimated USD cost using Gemini Flash pricing constants.
+6. Writes a JSON report to `eval/reports/<name>.json`.
+
+```
+python -m eval.runner --dataset eval/datasets/example.json --out eval/reports/baseline.json
+python -m eval.runner --dataset eval/datasets/example.json --out eval/reports/reranked.json --rerank
+```
+
+A diff between baseline and reranked reports is the central artifact of
+Section 5.4.
+
+### 5.4 Retrieval improvement: Gemini-as-reranker (Sprint 3, complete)
+Vector similarity is fast but coarse. Implemented `services/reranker.py`,
+a listwise reranker that:
+
+1. Receives the top-k chunks from the embedding retriever (overfetched by a
+   configurable factor — default 2× the requested final k).
+2. Builds a numbered passages prompt and asks Gemini for a JSON array of
+   `{n, score}` pairs (single API call, listwise scoring).
+3. Returns chunks sorted by descending rerank score; the RAG service then
+   keeps the top-k for prompt construction.
+
+The interface is a `Reranker` Protocol so a cross-encoder reranker
+(e.g. `bge-reranker-base`) could be added later without changing the RAG
+service. The reranker is opt-in via constructor argument; the eval runner
+exposes it as `--rerank`, which is how we compare baseline vs improved.
 
 ## 6. Testing strategy
 
@@ -160,7 +217,10 @@ Run with `cd backend && pytest`.
 |-----------------------------------|-------------|--------------------------------------------------------------|
 | `tests/test_health.py`            | integration | `/` returns service info; `/healthz` returns 200             |
 | `tests/test_parser.py`            | unit        | TXT and MD parsing, latin-1 fallback, unsupported types      |
-| `tests/test_documents_route.py`   | integration | Successful upload, missing file, unsupported file type       |
+| `tests/test_documents_route.py`   | integration | Successful upload, missing file, unsupported file type, indexing call |
+| `tests/test_chunker.py`           | unit        | Empty input, single-chunk pass-through, multi-chunk splits, overlap, paragraph preference |
+| `tests/test_rag.py`               | unit        | Indexing path, empty corpus handling, prompt construction, citation filtering, empty question |
+| `tests/test_chat_route.py`        | integration | Successful answer, validation of `question` and `top_k`      |
 
 CI runs lint (`ruff`) and tests (`pytest --cov`) on every PR.
 
@@ -170,20 +230,25 @@ Run with `cd frontend && npm test`.
 | File                                            | What it covers                                       |
 |-------------------------------------------------|-------------------------------------------------------|
 | `src/components/__tests__/DocumentList.test.jsx`| Empty state, list rendering, character formatting    |
+| `src/components/__tests__/AnswerText.test.jsx`  | Plain text rendering, single + multi-citation parsing |
 
 CI runs lint (`eslint`), tests (`vitest`), and a production build on every PR.
 
-### 6.3 RAG eval harness (Sprint 3, planned)
-A separate `backend/eval/` module will run a fixed evaluation set against
-the live system and produce a JSON report with:
+### 6.3 RAG eval harness (Sprint 3, complete)
+Lives in `backend/eval/`. Run with `python -m eval.runner --dataset ... --out ...`.
+See `backend/eval/README.md` for the dataset format and CLI flags.
 
-- **Retrieval quality:** recall@k, MRR over a hand-labelled dataset.
-- **Answer quality:** LLM-as-judge faithfulness (does the answer follow
-  from the retrieved context?) and answer-relevance scores.
-- **Operational:** p50/p95 latency per stage, total cost per query.
+| File                              | What it covers                                                |
+|-----------------------------------|---------------------------------------------------------------|
+| `tests/test_eval_dataset.py`      | Dataset loading + validation (4 tests)                        |
+| `tests/test_eval_metrics.py`      | recall@k, MRR, answer-match, faithfulness, latency, cost (10) |
+| `tests/test_eval_judge.py`        | LLM-as-judge JSON parsing, code-fence handling, clamping (5)  |
+| `tests/test_reranker.py`          | Reranker scoring + sorting + parse robustness (6)             |
+| `tests/test_rag_with_reranker.py` | RAG composes reranker with overfetch (2)                      |
 
-This harness is what makes Lexicon an "ML-engineering" project rather than
-a thin LLM wrapper, and it's the artifact to highlight in the final demo.
+The harness is what turns Lexicon from "an LLM wrapper" into an
+ML-engineering project. Its outputs (`eval/reports/*.json`) are the central
+artifact to show in the demo and to defend design choices.
 
 ## 7. Security notes
 
