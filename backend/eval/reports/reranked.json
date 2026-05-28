@@ -1,0 +1,179 @@
+{
+  "metadata": {
+    "dataset": "example",
+    "run_at": "2026-05-28T16:33:35.145476+00:00",
+    "config": {
+      "top_k": 5,
+      "rerank": true,
+      "judge": false,
+      "limit": 0,
+      "generation_model": "gemini-2.5-flash-lite",
+      "embedding_model": "gemini-embedding-001"
+    },
+    "n_questions": 6,
+    "n_failed": 0
+  },
+  "metrics": {
+    "recall_at_1": 1.0,
+    "recall_at_3": 1.0,
+    "recall_at_5": 1.0,
+    "mrr": 1.0,
+    "answer_substring_match_rate": 1.0,
+    "faithfulness_mean": null,
+    "latency": {
+      "p50_ms": 4387,
+      "p95_ms": 5457,
+      "mean_ms": 4835
+    },
+    "cost": {
+      "total_usd": 8.7e-05,
+      "per_query_usd": 1.4e-05,
+      "breakdown": {
+        "input_usd": 4.9e-05,
+        "output_usd": 3.6e-05,
+        "embedding_usd": 1e-06
+      }
+    }
+  },
+  "records": [
+    {
+      "question": "What is the capital of France?",
+      "expected_doc_id": "france",
+      "retrieved_doc_ids": [
+        "france"
+      ],
+      "retrieved_chunk_texts": [
+        "France, officially the French Republic, is a country in Western Europe. Its capital is Paris, which is also the largest city. France has a population of about 67 million people. The country is known for its cuisine, fashion, and art. The official language is French.\n\nFrance has a long history dating back to the Roman era. The French Revolution began in 1789 and led to the establishment of the First Republic in 1792. France was a founding member of the European Union and the United Nations."
+      ],
+      "expected_chunk_substrings": [
+        "capital",
+        "Paris"
+      ],
+      "answer": "The capital of France is Paris [1].",
+      "expected_answer_substrings": [
+        "Paris"
+      ],
+      "latency_ms": 4378,
+      "input_chars": 524,
+      "output_chars": 35,
+      "faithfulness_score": null,
+      "faithfulness_explanation": null
+    },
+    {
+      "question": "Which countries border France?",
+      "expected_doc_id": "france",
+      "retrieved_doc_ids": [
+        "france"
+      ],
+      "retrieved_chunk_texts": [
+        "e First Republic in 1792. France was a founding member of the European Union and the United Nations.France is bordered by Belgium, Luxembourg, Germany, Switzerland, Italy, Monaco, Spain, and Andorra. It also shares maritime borders with the United Kingdom across the English Channel."
+      ],
+      "expected_chunk_substrings": [
+        "bordered"
+      ],
+      "answer": "France is bordered by Belgium, Luxembourg, Germany, Switzerland, Italy, Monaco, Spain, and Andorra [1]. France also shares maritime borders with the United Kingdom across the English Channel [1].",
+      "expected_answer_substrings": [
+        "Belgium",
+        "Germany",
+        "Spain"
+      ],
+      "latency_ms": 5457,
+      "input_chars": 313,
+      "output_chars": 195,
+      "faithfulness_score": null,
+      "faithfulness_explanation": null
+    },
+    {
+      "question": "What is the largest city in Japan?",
+      "expected_doc_id": "japan",
+      "retrieved_doc_ids": [
+        "japan"
+      ],
+      "retrieved_chunk_texts": [
+        "Japan is an island country in East Asia. The capital and largest city is Tokyo, with a metropolitan population of over 37 million people. Japan consists of 6,852 islands; the four largest are Honshu, Hokkaido, Kyushu, and Shikoku.\n\nJapan has a constitutional monarchy with an Emperor as the ceremonial head of state. The Prime Minister is the head of government. Japanese is the official language."
+      ],
+      "expected_chunk_substrings": [
+        "Tokyo",
+        "largest"
+      ],
+      "answer": "Tokyo is the largest city in Japan [1].",
+      "expected_answer_substrings": [
+        "Tokyo"
+      ],
+      "latency_ms": 4126,
+      "input_chars": 431,
+      "output_chars": 39,
+      "faithfulness_score": null,
+      "faithfulness_explanation": null
+    },
+    {
+      "question": "What is the chemical equation for photosynthesis?",
+      "expected_doc_id": "photosynthesis",
+      "retrieved_doc_ids": [
+        "photosynthesis"
+      ],
+      "retrieved_chunk_texts": [
+        "Photosynthesis is the process by which green plants and some other organisms use sunlight to synthesize foods from carbon dioxide and water. Photosynthesis in plants generally involves the green pigment chlorophyll and generates oxygen as a byproduct.\n\nThe overall chemical equation for photosynthesis is: 6 CO2 + 6 H2O + light energy -> C6H12O6 + 6 O2. The glucose produced is used by the plant for energy and growth."
+      ],
+      "expected_chunk_substrings": [
+        "6 CO2",
+        "C6H12O6"
+      ],
+      "answer": "The chemical equation for photosynthesis is: 6 CO2 + 6 H2O + light energy -> C6H12O6 + 6 O2 [1].",
+      "expected_answer_substrings": [
+        "CO2",
+        "O2"
+      ],
+      "latency_ms": 4396,
+      "input_chars": 467,
+      "output_chars": 96,
+      "faithfulness_score": null,
+      "faithfulness_explanation": null
+    },
+    {
+      "question": "What byproduct does photosynthesis produce?",
+      "expected_doc_id": "photosynthesis",
+      "retrieved_doc_ids": [
+        "photosynthesis"
+      ],
+      "retrieved_chunk_texts": [
+        "Photosynthesis is the process by which green plants and some other organisms use sunlight to synthesize foods from carbon dioxide and water. Photosynthesis in plants generally involves the green pigment chlorophyll and generates oxygen as a byproduct.\n\nThe overall chemical equation for photosynthesis is: 6 CO2 + 6 H2O + light energy -> C6H12O6 + 6 O2. The glucose produced is used by the plant for energy and growth."
+      ],
+      "expected_chunk_substrings": [
+        "oxygen",
+        "byproduct"
+      ],
+      "answer": "Photosynthesis generates oxygen as a byproduct [1].",
+      "expected_answer_substrings": [
+        "oxygen"
+      ],
+      "latency_ms": 6583,
+      "input_chars": 461,
+      "output_chars": 51,
+      "faithfulness_score": null,
+      "faithfulness_explanation": null
+    },
+    {
+      "question": "What is the population of Japan's capital?",
+      "expected_doc_id": "japan",
+      "retrieved_doc_ids": [
+        "japan"
+      ],
+      "retrieved_chunk_texts": [
+        "Japan is an island country in East Asia. The capital and largest city is Tokyo, with a metropolitan population of over 37 million people. Japan consists of 6,852 islands; the four largest are Honshu, Hokkaido, Kyushu, and Shikoku.\n\nJapan has a constitutional monarchy with an Emperor as the ceremonial head of state. The Prime Minister is the head of government. Japanese is the official language."
+      ],
+      "expected_chunk_substrings": [
+        "37 million"
+      ],
+      "answer": "Tokyo has a metropolitan population of over 37 million people [1].",
+      "expected_answer_substrings": [
+        "37 million"
+      ],
+      "latency_ms": 4075,
+      "input_chars": 439,
+      "output_chars": 66,
+      "faithfulness_score": null,
+      "faithfulness_explanation": null
+    }
+  ]
+}
