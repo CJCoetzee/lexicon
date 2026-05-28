@@ -121,6 +121,9 @@ if unsure.
 **`CORS error` in the browser console.** `CORS_ORIGINS` must exactly match
 your frontend URL, including `https://` and no trailing slash.
 
-**Chroma data disappeared.** Render's free tier has ephemeral disk unless
-you attach a persistent disk. `render.yaml` declares one at `/var/data`
-sized 1 GB. If it didn't attach, re-apply the blueprint.
+**Chroma data disappeared.** Expected on the free tier — Render free
+services run on ephemeral storage. The index resets on restart and after
+the free-tier sleep wakes the service back up. Re-upload your documents
+when this happens. If you need persistence, upgrade `lexicon-backend` to a
+paid tier ($7/mo) and add a `disk:` block to `render.yaml` mounting at
+`/var/data` with `CHROMA_PERSIST_DIR=/var/data/chroma`.
