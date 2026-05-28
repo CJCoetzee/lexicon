@@ -91,7 +91,12 @@ def run(cfg: RunConfig) -> dict:
           f"({len(dataset.documents)} docs, {len(dataset.questions)} questions)")
 
     import tempfile
-    with tempfile.TemporaryDirectory(prefix="lexicon_eval_") as tmpdir:
+
+    # ignore_cleanup_errors=True: Chroma keeps SQLite/HNSW files open, so
+    # Windows can't unlink them. The OS GCs the temp dir eventually.
+    with tempfile.TemporaryDirectory(
+        prefix="lexicon_eval_", ignore_cleanup_errors=True
+    ) as tmpdir:
         rag = _build_isolated_rag(tmpdir, rerank=cfg.rerank)
 
         for doc in dataset.documents:
@@ -102,7 +107,23 @@ def run(cfg: RunConfig) -> dict:
         records: list[PerQuestionRecord] = []
         for i, q in enumerate(questions, start=1):
             t0 = time.perf_counter()
-            answer_result = rag.answer(q.question, top_k=cfg.top_k)
+            try:
+                answer_result = rag.answer(q.question, top_k=cfg.top_k)
+            except Exception as exc:  # noqa: BLE001
+                # Don't lose the whole run on one bad question (rate limit,
+                # API outage, etc). Record what happened and continue.
+                latency_ms = int((time.perf_counter() - t0) * 1000)
+                logger.warning("Question %s failed: %s", i, exc)
+                records.append(PerQuestionRecord(
+                    question=q.question,
+                    expected_doc_id=q.expected_doc_id,
+                    expected_chunk_substrings=q.expected_chunk_substrings,
+                    expected_answer_substrings=q.expected_answer_substrings,
+                    answer=f"<error: {exc.__class__.__name__}>",
+                    latency_ms=latency_ms,
+                ))
+                print(f"  [{i}/{len(questions)}] {latency_ms:>5} ms . FAILED . {exc.__class__.__name__}")
+                continue
             latency_ms = int((time.perf_counter() - t0) * 1000)
 
             retrieved_doc_ids: list[str] = []
@@ -126,12 +147,16 @@ def run(cfg: RunConfig) -> dict:
             )
 
             if cfg.judge:
-                judge = FaithfulnessJudge()
-                judge_result = judge.score(
-                    q.question, answer_result.answer, retrieved_chunk_texts
-                )
-                record.faithfulness_score = judge_result.score
-                record.faithfulness_explanation = judge_result.reason
+                try:
+                    judge = FaithfulnessJudge()
+                    judge_result = judge.score(
+                        q.question, answer_result.answer, retrieved_chunk_texts
+                    )
+                    record.faithfulness_score = judge_result.score
+                    record.faithfulness_explanation = judge_result.reason
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("Judge failed for question %s: %s", i, exc)
+                    record.faithfulness_explanation = f"judge failed: {exc.__class__.__name__}"
 
             records.append(record)
             faith = record.faithfulness_score if record.faithfulness_score is not None else "-"
@@ -140,12 +165,14 @@ def run(cfg: RunConfig) -> dict:
 
         report = _build_report(dataset, cfg, records)
 
-    out = Path(cfg.output_path)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(report, indent=2), encoding="utf-8")
-    print(f"\nReport written to {out}\n")
-    _print_summary(report)
-    return report
+        # Write the report inside the with-block so even if temp cleanup
+        # errors out on Windows, the report has already landed on disk.
+        out = Path(cfg.output_path)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(report, indent=2), encoding="utf-8")
+        print(f"\nReport written to {out}\n")
+        _print_summary(report)
+        return report
 
 
 def _rank_or_dash(record: PerQuestionRecord) -> str:
@@ -155,6 +182,7 @@ def _rank_or_dash(record: PerQuestionRecord) -> str:
 
 
 def _build_report(dataset: EvalDataset, cfg: RunConfig, records: list[PerQuestionRecord]) -> dict:
+    failed = sum(1 for r in records if r.answer.startswith("<error:"))
     return {
         "metadata": {
             "dataset": dataset.name,
@@ -168,6 +196,7 @@ def _build_report(dataset: EvalDataset, cfg: RunConfig, records: list[PerQuestio
                 "embedding_model": config.embedding_model,
             },
             "n_questions": len(records),
+            "n_failed": failed,
         },
         "metrics": {
             "recall_at_1": recall_at_k(records, 1),
@@ -186,6 +215,9 @@ def _build_report(dataset: EvalDataset, cfg: RunConfig, records: list[PerQuestio
 def _print_summary(report: dict) -> None:
     m = report["metrics"]
     print("Metrics summary:")
+    n_failed = report["metadata"].get("n_failed", 0)
+    if n_failed:
+        print(f"  ! {n_failed} question(s) failed (see records)")
     print(f"  recall@1            : {m['recall_at_1']:.2%}")
     print(f"  recall@3            : {m['recall_at_3']:.2%}")
     print(f"  recall@5            : {m['recall_at_5']:.2%}")
