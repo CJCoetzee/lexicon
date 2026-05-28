@@ -22,7 +22,7 @@ export default function DocumentList({ documents }) {
             <div className="min-w-0">
               <p className="text-sm font-medium text-ink-900 truncate">{doc.filename}</p>
               <p className="text-xs text-ink-400">
-                {doc.char_count.toLocaleString()} chars
+                {doc.char_count.toLocaleString('en-US')} chars
               </p>
             </div>
           </li>

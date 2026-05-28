@@ -1,8 +1,6 @@
 """Verify that the RagService composes the reranker correctly."""
 from __future__ import annotations
 
-from typing import List
-
 from services.rag import RagService
 from services.reranker import GeminiReranker
 from services.vector_store import Chunk, RetrievalResult
@@ -29,7 +27,7 @@ class FakeGen:
 
 
 class FakeStore:
-    def __init__(self, results: List[RetrievalResult]):
+    def __init__(self, results: list[RetrievalResult]):
         self._results = results
         self.last_top_k = None
 

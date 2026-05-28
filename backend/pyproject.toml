@@ -8,3 +8,6 @@ ignore = ["E501"]  # handled by line-length
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["E402"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "config", "eval", "routes", "scripts", "services"]

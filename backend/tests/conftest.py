@@ -8,7 +8,6 @@ import pytest
 from app import create_app
 from services.rag import AnswerResult, Citation
 
-
 # ---------------------------------------------------------------------------
 # Fakes — keep tests fast and offline (no Gemini, no Chroma on disk).
 # ---------------------------------------------------------------------------

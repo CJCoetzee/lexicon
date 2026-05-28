@@ -12,8 +12,8 @@ from __future__ import annotations
 import json
 import logging
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence
 
 from services.llm import GenerationProvider, get_generation_provider
 
@@ -25,7 +25,7 @@ the provided context — i.e., is every factual claim in the answer supported
 by at least one passage?
 
 Return ONLY a single JSON object on one line:
-{"score": <float between 0 and 1>, "reason": "<one short sentence>"}
+{{"score": <float between 0 and 1>, "reason": "<one short sentence>"}}
 
 A score of 1.0 means every claim is supported. 0.0 means the answer
 contradicts or invents content not in the passages. An answer of "I don't

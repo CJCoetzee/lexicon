@@ -19,6 +19,7 @@ export default function AnswerText({ text, onCitationClick }) {
         onClick={() => onCitationClick?.(n)}
         className="text-accent-600 font-medium text-xs align-super ml-0.5 hover:underline focus:outline-none focus:ring-2 focus:ring-accent-500/40 rounded"
         title={`Show citation ${n}`}
+        aria-label={`Show citation ${n}`}
       >
         [{n}]
       </button>,
