@@ -1,6 +1,13 @@
 # Render blueprint — describes the deployed services for Lexicon.
 # When you connect this repo to Render and "Apply Blueprint", it provisions
 # both services in one go.
+#
+# Note on storage: Render's free tier doesn't include persistent disks, so
+# Chroma writes to the container's local filesystem. The index will reset on
+# service restart or after the free-tier instance sleeps. For demo purposes
+# this is fine — re-upload your documents at the start of the session.
+# To get true persistence, upgrade lexicon-backend to a paid tier and add a
+# `disk:` block mounting at the same path.
 
 services:
   - type: web
@@ -17,13 +24,9 @@ services:
       - key: FLASK_ENV
         value: production
       - key: CHROMA_PERSIST_DIR
-        value: /var/data/chroma
+        value: /tmp/chroma       # ephemeral on free tier; see header note
       - key: CORS_ORIGINS
         sync: false              # set to the deployed frontend URL
-    disk:
-      name: chroma-data
-      mountPath: /var/data
-      sizeGB: 1
 
   - type: web
     name: lexicon-frontend

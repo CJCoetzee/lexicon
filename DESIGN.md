@@ -298,10 +298,16 @@ artifact to show in the demo and to defend design choices.
 ## 8. Deployment
 
 Backend and frontend are deployed to Render via `render.yaml` (a Render
-Blueprint). The blueprint provisions both services and a 1 GB persistent
-disk for Chroma at `/var/data/chroma`. Secrets (`GEMINI_API_KEY`,
-`CORS_ORIGINS`, `VITE_API_BASE_URL`) are set per-service in the Render
-dashboard rather than committed.
+Blueprint). The blueprint provisions both services in one click. Secrets
+(`GEMINI_API_KEY`, `CORS_ORIGINS`, `VITE_API_BASE_URL`) are set per-service
+in the Render dashboard rather than committed.
+
+On the free tier Chroma writes to the container's ephemeral filesystem
+(`/tmp/chroma`); the index resets when the service restarts or wakes from
+sleep. For a production deployment the upgrade path is straightforward —
+move `lexicon-backend` to a paid tier and add a `disk:` block to
+`render.yaml` mounting at `/var/data`, then set `CHROMA_PERSIST_DIR` to
+`/var/data/chroma`. The application code requires no changes.
 
 Liveness is checked via `GET /healthz`. A future `/readyz` will also
 verify Gemini and Chroma connectivity.
