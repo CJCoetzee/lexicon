@@ -8,7 +8,8 @@ from __future__ import annotations
 
 import io
 import os
-from typing import Callable, Dict, IO, Iterable
+from collections.abc import Callable, Iterable
+from typing import IO
 
 from pypdf import PdfReader
 
@@ -41,7 +42,7 @@ def _extract_text(stream: IO[bytes]) -> str:
 
 # Registry of extension -> extractor.
 # Strategy pattern: callers don't need to know about each format.
-_EXTRACTORS: Dict[str, Callable[[IO[bytes]], str]] = {
+_EXTRACTORS: dict[str, Callable[[IO[bytes]], str]] = {
     ".pdf": _extract_pdf,
     ".txt": _extract_text,
     ".md": _extract_text,

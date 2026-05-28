@@ -12,7 +12,6 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass
-from typing import List
 
 import chromadb
 from chromadb.config import Settings
@@ -72,7 +71,7 @@ class VectorStore:
     # We provide stubs so the module is importable in Sprint 1.
     # ------------------------------------------------------------------
 
-    def add_chunks(self, chunks: List[Chunk], embeddings: List[List[float]]) -> None:
+    def add_chunks(self, chunks: list[Chunk], embeddings: list[list[float]]) -> None:
         if not chunks:
             return
         if len(chunks) != len(embeddings):
@@ -91,7 +90,7 @@ class VectorStore:
             ],
         )
 
-    def query(self, embedding: List[float], top_k: int = 5) -> List[RetrievalResult]:
+    def query(self, embedding: list[float], top_k: int = 5) -> list[RetrievalResult]:
         result = self._collection.query(
             query_embeddings=[embedding],
             n_results=top_k,
@@ -101,8 +100,8 @@ class VectorStore:
         metadatas = result.get("metadatas", [[]])[0]
         distances = result.get("distances", [[]])[0]
 
-        results: List[RetrievalResult] = []
-        for chunk_id, text, meta, distance in zip(ids, documents, metadatas, distances):
+        results: list[RetrievalResult] = []
+        for chunk_id, text, meta, distance in zip(ids, documents, metadatas, distances, strict=False):
             results.append(
                 RetrievalResult(
                     chunk=Chunk(

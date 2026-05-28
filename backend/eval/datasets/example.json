@@ -1,0 +1,58 @@
+{
+  "name": "example",
+  "documents": [
+    {
+      "id": "france",
+      "name": "France.txt",
+      "content": "France, officially the French Republic, is a country in Western Europe. Its capital is Paris, which is also the largest city. France has a population of about 67 million people. The country is known for its cuisine, fashion, and art. The official language is French.\n\nFrance has a long history dating back to the Roman era. The French Revolution began in 1789 and led to the establishment of the First Republic in 1792. France was a founding member of the European Union and the United Nations.\n\nFrance is bordered by Belgium, Luxembourg, Germany, Switzerland, Italy, Monaco, Spain, and Andorra. It also shares maritime borders with the United Kingdom across the English Channel."
+    },
+    {
+      "id": "japan",
+      "name": "Japan.txt",
+      "content": "Japan is an island country in East Asia. The capital and largest city is Tokyo, with a metropolitan population of over 37 million people. Japan consists of 6,852 islands; the four largest are Honshu, Hokkaido, Kyushu, and Shikoku.\n\nJapan has a constitutional monarchy with an Emperor as the ceremonial head of state. The Prime Minister is the head of government. Japanese is the official language.\n\nThe Japanese economy is the third largest in the world by nominal GDP. Major exports include vehicles, electronics, and machinery. Japan is also famous for its traditional culture, including sushi, anime, and tea ceremonies."
+    },
+    {
+      "id": "photosynthesis",
+      "name": "Photosynthesis.txt",
+      "content": "Photosynthesis is the process by which green plants and some other organisms use sunlight to synthesize foods from carbon dioxide and water. Photosynthesis in plants generally involves the green pigment chlorophyll and generates oxygen as a byproduct.\n\nThe overall chemical equation for photosynthesis is: 6 CO2 + 6 H2O + light energy -> C6H12O6 + 6 O2. The glucose produced is used by the plant for energy and growth.\n\nPhotosynthesis occurs primarily in the chloroplasts of plant cells. The process consists of two main stages: the light-dependent reactions and the Calvin cycle (light-independent reactions)."
+    }
+  ],
+  "questions": [
+    {
+      "question": "What is the capital of France?",
+      "expected_doc_id": "france",
+      "expected_chunk_substrings": ["capital", "Paris"],
+      "expected_answer_substrings": ["Paris"]
+    },
+    {
+      "question": "Which countries border France?",
+      "expected_doc_id": "france",
+      "expected_chunk_substrings": ["bordered"],
+      "expected_answer_substrings": ["Belgium", "Germany", "Spain"]
+    },
+    {
+      "question": "What is the largest city in Japan?",
+      "expected_doc_id": "japan",
+      "expected_chunk_substrings": ["Tokyo", "largest"],
+      "expected_answer_substrings": ["Tokyo"]
+    },
+    {
+      "question": "What is the chemical equation for photosynthesis?",
+      "expected_doc_id": "photosynthesis",
+      "expected_chunk_substrings": ["6 CO2", "C6H12O6"],
+      "expected_answer_substrings": ["CO2", "O2"]
+    },
+    {
+      "question": "What byproduct does photosynthesis produce?",
+      "expected_doc_id": "photosynthesis",
+      "expected_chunk_substrings": ["oxygen", "byproduct"],
+      "expected_answer_substrings": ["oxygen"]
+    },
+    {
+      "question": "What is the population of Japan's capital?",
+      "expected_doc_id": "japan",
+      "expected_chunk_substrings": ["37 million"],
+      "expected_answer_substrings": ["37 million"]
+    }
+  ]
+}

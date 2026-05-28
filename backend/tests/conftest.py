@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List
 
 import pytest
 
@@ -19,7 +18,7 @@ from services.rag import AnswerResult, Citation
 class FakeRagService:
     """Records calls and returns canned responses."""
 
-    indexed_documents: List[tuple] = None  # type: ignore[assignment]
+    indexed_documents: list[tuple] = None  # type: ignore[assignment]
     next_answer: AnswerResult = None        # type: ignore[assignment]
 
     def __post_init__(self):

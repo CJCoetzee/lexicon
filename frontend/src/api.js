@@ -43,6 +43,14 @@ export const api = {
   supportedTypes() {
     return request('/api/documents/supported-types')
   },
+
+  ask(question, topK = 5) {
+    return request('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, top_k: topK }),
+    })
+  },
 }
 
 export { ApiError }

@@ -19,7 +19,7 @@ import requests
 # Allow `python scripts/list_models.py` from the backend/ directory.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from config import config  # noqa: E402
+from config import config  # noqa: E402,I001
 
 
 LIST_URL = "https://generativelanguage.googleapis.com/v1beta/models"

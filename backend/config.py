@@ -7,14 +7,13 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
-from typing import List
 
 from dotenv import load_dotenv
 
 load_dotenv()
 
 
-def _split_csv(value: str) -> List[str]:
+def _split_csv(value: str) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
@@ -24,7 +23,7 @@ class Config:
     flask_env: str = os.getenv("FLASK_ENV", "production")
     flask_debug: bool = os.getenv("FLASK_DEBUG", "0") == "1"
     chroma_persist_dir: str = os.getenv("CHROMA_PERSIST_DIR", "./chroma_data")
-    cors_origins: List[str] = field(
+    cors_origins: list[str] = field(
         default_factory=lambda: _split_csv(
             os.getenv("CORS_ORIGINS", "http://localhost:5173")
         )

@@ -15,11 +15,11 @@ import logging
 import re
 import time
 from dataclasses import dataclass
-from typing import List
 
 from services.chunker import ChunkConfig, chunk_text
 from services.embeddings import EmbeddingProvider, get_embedding_provider
 from services.llm import GenerationProvider, get_generation_provider
+from services.reranker import Reranker
 from services.vector_store import Chunk, RetrievalResult, VectorStore, get_vector_store
 
 logger = logging.getLogger(__name__)
@@ -55,7 +55,7 @@ class Citation:
 @dataclass(frozen=True)
 class AnswerResult:
     answer: str
-    citations: List[Citation]
+    citations: list[Citation]
     latency_ms: int
     retrieved: int
 
@@ -67,11 +67,17 @@ class RagService:
         generation: GenerationProvider | None = None,
         store: VectorStore | None = None,
         chunk_config: ChunkConfig | None = None,
+        reranker: Reranker | None = None,
+        retrieval_overfetch: int = 2,
     ):
         self._embeddings = embeddings or get_embedding_provider()
         self._generation = generation or get_generation_provider()
         self._store = store or get_vector_store()
         self._chunk_config = chunk_config or ChunkConfig()
+        self._reranker = reranker
+        # When reranking, fetch more candidates than we'll keep so the
+        # reranker has room to reorder. Has no effect when reranker is None.
+        self._retrieval_overfetch = max(1, retrieval_overfetch)
 
     # ------------------------------------------------------------------
     # Indexing
@@ -110,7 +116,14 @@ class RagService:
         start = time.perf_counter()
 
         query_emb = self._embeddings.embed([question])[0]
-        results = self._store.query(query_emb, top_k=top_k)
+        fetch_k = top_k * self._retrieval_overfetch if self._reranker else top_k
+        results = self._store.query(query_emb, top_k=fetch_k)
+
+        # Optional reranking pass. Rerank the larger candidate set and keep
+        # the top-k by rerank score.
+        if self._reranker and results:
+            scored = self._reranker.rerank(question, results)
+            results = [s.result for s in scored[:top_k]]
 
         if not results:
             return AnswerResult(
@@ -152,7 +165,7 @@ class RagService:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _build_prompt(question: str, results: List[RetrievalResult]) -> str:
+    def _build_prompt(question: str, results: list[RetrievalResult]) -> str:
         context_blocks = []
         for i, result in enumerate(results, start=1):
             context_blocks.append(

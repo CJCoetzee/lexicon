@@ -18,7 +18,7 @@ def test_supported_extensions_includes_expected_types():
 
 
 def test_parses_plain_text_utf8():
-    stream = io.BytesIO("Hello, Lexicon!".encode("utf-8"))
+    stream = io.BytesIO(b"Hello, Lexicon!")
     text = parse_document("notes.txt", stream)
     assert text == "Hello, Lexicon!"
 

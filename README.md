@@ -13,8 +13,8 @@ Built as the MSSE Capstone project for Quantic.
 
 ## Project artifacts
 
-- **GitHub repo:** _(this repo)_
-- **Trello Scrum board:** _(link to be added after Sprint 1)_
+- **GitHub repo:** https://github.com/CJCoetzee/lexicon
+- **Trello Scrum board:** https://trello.com/b/69f63c86cb80f47ed2c384bd/lexicon
 - **Design and testing document:** [DESIGN.md](./DESIGN.md)
 - **Final demo recording:** _(to be added after final submission)_
 
@@ -59,9 +59,12 @@ lexicon/
 
 ### Backend
 
+Requires Python **3.11 or 3.12**. Python 3.13 is not yet supported because
+pinned NumPy 1.26.x has no 3.13 wheel on PyPI.
+
 ```bash
 cd backend
-python -m venv .venv
+py -3.12 -m venv .venv             # Windows; use `python3.12 -m venv .venv` on macOS/Linux
 source .venv/bin/activate          # macOS/Linux
 .venv\Scripts\activate             # Windows
 pip install -r requirements.txt

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from flask import Blueprint, jsonify, request
 
@@ -71,7 +71,7 @@ def upload_document():
         "id": document_id,
         "filename": upload.filename,
         "char_count": len(text),
-        "uploaded_at": datetime.now(timezone.utc).isoformat(),
+        "uploaded_at": datetime.now(UTC).isoformat(),
         "preview": text[:500],
         "chunks_indexed": chunks_indexed,
     }

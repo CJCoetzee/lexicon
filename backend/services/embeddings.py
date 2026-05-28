@@ -8,7 +8,7 @@ harness will use the same interface to A/B against alternatives.
 from __future__ import annotations
 
 import logging
-from typing import List, Protocol
+from typing import Protocol
 
 from google import genai
 
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class EmbeddingProvider(Protocol):
     """Anything that can turn a list of strings into vectors."""
 
-    def embed(self, texts: List[str]) -> List[List[float]]: ...
+    def embed(self, texts: list[str]) -> list[list[float]]: ...
 
 
 class GeminiEmbeddingProvider:
@@ -40,10 +40,10 @@ class GeminiEmbeddingProvider:
         self._client = genai.Client(api_key=api_key or config.gemini_api_key)
         self._model = model or config.embedding_model
 
-    def embed(self, texts: List[str]) -> List[List[float]]:
+    def embed(self, texts: list[str]) -> list[list[float]]:
         if not texts:
             return []
-        all_embeddings: List[List[float]] = []
+        all_embeddings: list[list[float]] = []
         for i in range(0, len(texts), self.BATCH_LIMIT):
             batch = texts[i : i + self.BATCH_LIMIT]
             result = self._client.models.embed_content(
