@@ -6,7 +6,6 @@ import pytest
 from services.rag import RagService
 from services.vector_store import Chunk, RetrievalResult
 
-
 # ---------------------------------------------------------------------------
 # Fakes
 # ---------------------------------------------------------------------------

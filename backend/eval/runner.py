@@ -14,14 +14,13 @@ import logging
 import sys
 import time
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import List
 
 # Allow `python -m eval.runner` from the backend/ directory.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import chromadb  # noqa: E402
+import chromadb  # noqa: E402,I001
 from chromadb.config import Settings  # noqa: E402
 
 from config import config  # noqa: E402
@@ -61,13 +60,12 @@ def _build_isolated_rag(persist_dir: str, rerank: bool = False) -> RagService:
     We don't use the singleton because the eval should not pollute the live
     production collection.
     """
-    # Force a fresh collection name so previous runs don't leak.
     collection_name = f"eval_{int(time.time() * 1000)}"
 
     class _IsolatedVectorStore(VectorStore):
         def __init__(self):
-            self._persist_dir = persist_dir
             import os
+            self._persist_dir = persist_dir
             os.makedirs(self._persist_dir, exist_ok=True)
             self._client = chromadb.PersistentClient(
                 path=self._persist_dir,
@@ -96,21 +94,19 @@ def run(cfg: RunConfig) -> dict:
     with tempfile.TemporaryDirectory(prefix="lexicon_eval_") as tmpdir:
         rag = _build_isolated_rag(tmpdir, rerank=cfg.rerank)
 
-        # Index all documents
         for doc in dataset.documents:
             n = rag.index_document(doc.id, doc.name, doc.content)
             print(f"  indexed {doc.id} -> {n} chunks")
 
-        # Run every question
         questions = dataset.questions[: cfg.limit] if cfg.limit > 0 else dataset.questions
-        records: List[PerQuestionRecord] = []
+        records: list[PerQuestionRecord] = []
         for i, q in enumerate(questions, start=1):
             t0 = time.perf_counter()
             answer_result = rag.answer(q.question, top_k=cfg.top_k)
             latency_ms = int((time.perf_counter() - t0) * 1000)
 
-            retrieved_doc_ids: List[str] = []
-            retrieved_chunk_texts: List[str] = []
+            retrieved_doc_ids: list[str] = []
+            retrieved_chunk_texts: list[str] = []
             for citation in answer_result.citations:
                 retrieved_doc_ids.append(citation.document_id)
                 retrieved_chunk_texts.append(citation.text)
@@ -138,9 +134,9 @@ def run(cfg: RunConfig) -> dict:
                 record.faithfulness_explanation = judge_result.reason
 
             records.append(record)
-            print(f"  [{i}/{len(questions)}] {latency_ms:>5} ms · "
-                  f"rank={_rank_or_dash(record)} · "
-                  f"faith={record.faithfulness_score if record.faithfulness_score is not None else '—'}")
+            faith = record.faithfulness_score if record.faithfulness_score is not None else "-"
+            print(f"  [{i}/{len(questions)}] {latency_ms:>5} ms . "
+                  f"rank={_rank_or_dash(record)} . faith={faith}")
 
         report = _build_report(dataset, cfg, records)
 
@@ -155,14 +151,14 @@ def run(cfg: RunConfig) -> dict:
 def _rank_or_dash(record: PerQuestionRecord) -> str:
     from eval.metrics import gold_rank
     r = gold_rank(record)
-    return str(r) if r is not None else "—"
+    return str(r) if r is not None else "-"
 
 
-def _build_report(dataset: EvalDataset, cfg: RunConfig, records: List[PerQuestionRecord]) -> dict:
+def _build_report(dataset: EvalDataset, cfg: RunConfig, records: list[PerQuestionRecord]) -> dict:
     return {
         "metadata": {
             "dataset": dataset.name,
-            "run_at": datetime.now(timezone.utc).isoformat(),
+            "run_at": datetime.now(UTC).isoformat(),
             "config": {
                 "top_k": cfg.top_k,
                 "rerank": cfg.rerank,
@@ -201,7 +197,7 @@ def _print_summary(report: dict) -> None:
     print(f"  est. cost per query : ${m['cost']['per_query_usd']:.6f}")
 
 
-def _parse_args(argv: List[str]) -> RunConfig:
+def _parse_args(argv: list[str]) -> RunConfig:
     p = argparse.ArgumentParser(description="Run the Lexicon RAG eval.")
     p.add_argument("--dataset", required=True, help="Path to dataset JSON.")
     p.add_argument("--out", required=True, help="Path to output report JSON.")
@@ -221,16 +217,7 @@ def _parse_args(argv: List[str]) -> RunConfig:
     )
 
 
-def main(argv: List[str] | None = None) -> int:
-    logging.basicConfig(level=logging.WARNING)
-    cfg = _parse_args(argv or sys.argv[1:])
-    run(cfg)
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
-nt:
+def main(argv: list[str] | None = None) -> int:
     logging.basicConfig(level=logging.WARNING)
     cfg = _parse_args(argv or sys.argv[1:])
     run(cfg)

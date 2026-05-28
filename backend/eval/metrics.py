@@ -7,9 +7,8 @@ a summary number/dict. The runner orchestrates the loop.
 from __future__ import annotations
 
 import statistics
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import List, Sequence
-
 
 # Gemini Flash pricing as of 2026, per million tokens. Adjust if Google
 # shifts pricing — these constants live in one place for that reason.
@@ -27,13 +26,13 @@ class PerQuestionRecord:
     expected_doc_id: str
 
     # Retrieval
-    retrieved_doc_ids: List[str] = field(default_factory=list)
-    retrieved_chunk_texts: List[str] = field(default_factory=list)
-    expected_chunk_substrings: List[str] = field(default_factory=list)
+    retrieved_doc_ids: list[str] = field(default_factory=list)
+    retrieved_chunk_texts: list[str] = field(default_factory=list)
+    expected_chunk_substrings: list[str] = field(default_factory=list)
 
     # Generation
     answer: str = ""
-    expected_answer_substrings: List[str] = field(default_factory=list)
+    expected_answer_substrings: list[str] = field(default_factory=list)
 
     # Operational
     latency_ms: int = 0
@@ -55,7 +54,7 @@ def _chunk_is_match(chunk_text: str, substrings: Sequence[str]) -> bool:
 def gold_rank(record: PerQuestionRecord) -> int | None:
     """1-based rank of the first matching chunk, or None if not retrieved."""
     for i, (doc_id, text) in enumerate(
-        zip(record.retrieved_doc_ids, record.retrieved_chunk_texts), start=1
+        zip(record.retrieved_doc_ids, record.retrieved_chunk_texts, strict=False), start=1
     ):
         if doc_id == record.expected_doc_id and _chunk_is_match(
             text, record.expected_chunk_substrings
@@ -68,14 +67,14 @@ def gold_rank(record: PerQuestionRecord) -> int | None:
     return None
 
 
-def recall_at_k(records: List[PerQuestionRecord], k: int) -> float:
+def recall_at_k(records: list[PerQuestionRecord], k: int) -> float:
     if not records:
         return 0.0
     hits = sum(1 for r in records if (rank := gold_rank(r)) is not None and rank <= k)
     return hits / len(records)
 
 
-def mean_reciprocal_rank(records: List[PerQuestionRecord]) -> float:
+def mean_reciprocal_rank(records: list[PerQuestionRecord]) -> float:
     if not records:
         return 0.0
     total = 0.0
@@ -86,7 +85,7 @@ def mean_reciprocal_rank(records: List[PerQuestionRecord]) -> float:
     return total / len(records)
 
 
-def answer_match_rate(records: List[PerQuestionRecord]) -> float:
+def answer_match_rate(records: list[PerQuestionRecord]) -> float:
     if not records:
         return 0.0
     hits = 0
@@ -100,14 +99,14 @@ def answer_match_rate(records: List[PerQuestionRecord]) -> float:
     return hits / n_with_expected if n_with_expected else 0.0
 
 
-def mean_faithfulness(records: List[PerQuestionRecord]) -> float | None:
+def mean_faithfulness(records: list[PerQuestionRecord]) -> float | None:
     scored = [r.faithfulness_score for r in records if r.faithfulness_score is not None]
     if not scored:
         return None
     return sum(scored) / len(scored)
 
 
-def latency_percentiles(records: List[PerQuestionRecord]) -> dict:
+def latency_percentiles(records: list[PerQuestionRecord]) -> dict:
     if not records:
         return {"p50_ms": 0, "p95_ms": 0, "mean_ms": 0}
     latencies = sorted(r.latency_ms for r in records)
@@ -118,7 +117,7 @@ def latency_percentiles(records: List[PerQuestionRecord]) -> dict:
     }
 
 
-def estimated_cost(records: List[PerQuestionRecord]) -> dict:
+def estimated_cost(records: list[PerQuestionRecord]) -> dict:
     input_tokens = sum(r.input_chars for r in records) / CHARS_PER_TOKEN
     output_tokens = sum(r.output_chars for r in records) / CHARS_PER_TOKEN
     # Embedding cost is roughly proportional to input tokens too (one embed

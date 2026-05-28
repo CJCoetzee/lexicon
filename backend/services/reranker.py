@@ -16,7 +16,7 @@ import json
 import logging
 import re
 from dataclasses import dataclass
-from typing import List, Protocol
+from typing import Protocol
 
 from services.llm import GenerationProvider, get_generation_provider
 from services.vector_store import RetrievalResult
@@ -51,8 +51,8 @@ class ScoredChunk:
 
 class Reranker(Protocol):
     def rerank(
-        self, question: str, results: List[RetrievalResult]
-    ) -> List[ScoredChunk]: ...
+        self, question: str, results: list[RetrievalResult]
+    ) -> list[ScoredChunk]: ...
 
 
 class GeminiReranker:
@@ -60,8 +60,8 @@ class GeminiReranker:
         self._generation = generation or get_generation_provider()
 
     def rerank(
-        self, question: str, results: List[RetrievalResult]
-    ) -> List[ScoredChunk]:
+        self, question: str, results: list[RetrievalResult]
+    ) -> list[ScoredChunk]:
         if not results:
             return []
         passages = "\n\n".join(

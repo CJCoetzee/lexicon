@@ -16,7 +16,11 @@ chat_bp = Blueprint("chat", __name__)
 def chat():
     payload = request.get_json(silent=True) or {}
     question = (payload.get("question") or "").strip()
-    top_k = int(payload.get("top_k") or 5)
+    top_k_raw = payload.get("top_k")
+    try:
+        top_k = int(top_k_raw) if top_k_raw is not None else 5
+    except (TypeError, ValueError):
+        return jsonify({"error": "invalid_top_k", "message": "top_k must be an integer"}), 400
 
     if not question:
         return jsonify({"error": "missing_question"}), 400
