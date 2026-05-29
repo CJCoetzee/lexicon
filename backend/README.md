@@ -15,7 +15,6 @@ pip install -r requirements.txt
 cp .env.example .env         # then edit and add GEMINI_API_KEY
 python app.py
 ```
-
 Backend runs on http://localhost:5000.
 
 ## Endpoints (Sprint 1)
