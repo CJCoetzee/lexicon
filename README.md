@@ -8,8 +8,11 @@ Built as the MSSE Capstone project for Quantic.
 
 ## Live demo
 
-- **Frontend:** _(to be added after Sprint 1 deployment)_
-- **Backend API:** _(to be added after Sprint 1 deployment)_
+- **Frontend:** https://lexicon-frontend-9f1q.onrender.com
+- **Backend API:** https://lexicon-backend-ma4z.onrender.com
+
+Hosted on Render free tier — first request after 15 minutes of inactivity
+takes ~30–60s to wake the backend. Subsequent requests are fast.
 
 ## Project artifacts
 
