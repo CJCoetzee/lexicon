@@ -1,12 +1,4 @@
-"""LLM-as-judge faithfulness scoring.
-
-Asks Gemini to score, on a 0–1 scale, whether the answer is faithful to the
-provided context — i.e., whether every claim in the answer is supported by
-the retrieved passages.
-
-The judge sees only (question, answer, retrieved chunks). It is deliberately
-NOT told the expected answer, to avoid degenerating into a paraphrase check.
-"""
+"""LLM-as-judge faithfulness scoring."""
 from __future__ import annotations
 
 import json
@@ -20,17 +12,17 @@ from services.llm import GenerationProvider, get_generation_provider
 logger = logging.getLogger(__name__)
 
 
-_PROMPT = """You are a strict evaluator. Score the answer for FAITHFULNESS to
-the provided context — i.e., is every factual claim in the answer supported
+_PROMPT = """You are a strict evaluator. Score the answer for FAITHFULNESS
+to the provided context -- is every factual claim in the answer supported
 by at least one passage?
 
 Return ONLY a single JSON object on one line:
 {{"score": <float between 0 and 1>, "reason": "<one short sentence>"}}
 
 A score of 1.0 means every claim is supported. 0.0 means the answer
-contradicts or invents content not in the passages. An answer of "I don't
-have enough information..." against passages that DON'T contain the answer
-is a faithful response and should score 1.0.
+contradicts or invents content not in the passages. An answer of
+"I don't have enough information..." against passages that DON'T
+contain the answer is a faithful response and should score 1.0.
 
 QUESTION
 {question}
@@ -62,7 +54,6 @@ class FaithfulnessJudge:
 
 
 def _parse(raw: str) -> JudgeResult:
-    # Be forgiving: model sometimes wraps JSON in code fences or prose.
     match = re.search(r"\{.*?\}", raw, re.DOTALL)
     if not match:
         logger.warning("Judge returned non-JSON output: %r", raw[:200])
@@ -74,5 +65,5 @@ def _parse(raw: str) -> JudgeResult:
         reason = str(obj.get("reason", "")).strip()
         return JudgeResult(score=score, reason=reason)
     except (json.JSONDecodeError, ValueError, TypeError) as exc:
-        logger.warning("Judge JSON parse failed: %s — raw: %r", exc, raw[:200])
+        logger.warning("Judge JSON parse failed: %s -- raw: %r", exc, raw[:200])
         return JudgeResult(score=0.0, reason="unparseable judge output")

@@ -1,0 +1,80 @@
+{
+  "name": "hard",
+  "documents": [
+    {
+      "id": "france",
+      "name": "France.txt",
+      "content": "France, officially the French Republic, is a country in Western Europe. Its capital and largest city is Paris. The official language is French. France has a population of about 67 million. France shares land borders with Belgium, Luxembourg, Germany, Switzerland, Italy, Monaco, Spain, and Andorra. France is famous for its cuisine, fashion, art, and wine, particularly from regions like Bordeaux and Champagne. The French Revolution began in 1789 and reshaped European political thought. France is a founding member of the European Union and a permanent member of the UN Security Council."
+    },
+    {
+      "id": "spain",
+      "name": "Spain.txt",
+      "content": "Spain, officially the Kingdom of Spain, is a country in Southwestern Europe on the Iberian Peninsula. Its capital and largest city is Madrid. The official language is Spanish, also called Castilian. Spain has a population of about 47 million. Spain shares land borders with France and Andorra to the north, Portugal to the west, and Gibraltar to the south. Spain is famous for flamenco, paella, the works of Cervantes and Picasso, and historic cities including Barcelona, Seville, and Granada. Spain is a constitutional monarchy and a member of the European Union."
+    },
+    {
+      "id": "portugal",
+      "name": "Portugal.txt",
+      "content": "Portugal, officially the Portuguese Republic, is a country in Southwestern Europe on the Iberian Peninsula. Its capital and largest city is Lisbon. The official language is Portuguese. Portugal has a population of about 10 million. Portugal shares its only land border with Spain to the north and east; the Atlantic Ocean bounds it to the west and south. Portugal is famous for port wine produced in the Douro Valley, fado music, the Age of Discovery led by Henry the Navigator, and historic cities including Porto and Coimbra. Portugal is a member of the European Union and NATO."
+    },
+    {
+      "id": "italy",
+      "name": "Italy.txt",
+      "content": "Italy, officially the Italian Republic, is a country in Southern Europe with a distinctive boot shape extending into the Mediterranean. Its capital and largest city is Rome. The official language is Italian. Italy has a population of about 59 million. Italy shares land borders with France, Switzerland, Austria, and Slovenia. Italy is famous for pasta and pizza, the Roman Empire, the Renaissance with figures like Leonardo da Vinci and Michelangelo, opera, and the fashion industry centered in Milan. The Vatican City, an independent state, is enclaved within Rome."
+    },
+    {
+      "id": "germany",
+      "name": "Germany.txt",
+      "content": "Germany, officially the Federal Republic of Germany, is a country in Central Europe. Its capital and largest city is Berlin. The official language is German. Germany has a population of about 84 million, making it the most populous member of the European Union. Germany shares land borders with Denmark, the Netherlands, Belgium, Luxembourg, France, Switzerland, Austria, the Czech Republic, and Poland. Germany is famous for engineering, automotive industries like BMW and Mercedes, classical composers including Bach and Beethoven, Oktoberfest, and a long literary and philosophical tradition. Germany is a federal parliamentary republic."
+    }
+  ],
+  "questions": [
+    {
+      "question": "What is the official language of the country whose capital is Madrid?",
+      "expected_doc_id": "spain",
+      "expected_chunk_substrings": ["Madrid", "Spanish"],
+      "expected_answer_substrings": ["Spanish"]
+    },
+    {
+      "question": "Which country shares its only land border with Spain?",
+      "expected_doc_id": "portugal",
+      "expected_chunk_substrings": ["Spain", "border"],
+      "expected_answer_substrings": ["Portugal"]
+    },
+    {
+      "question": "What is the capital of the country famous for the Renaissance?",
+      "expected_doc_id": "italy",
+      "expected_chunk_substrings": ["Renaissance", "Rome"],
+      "expected_answer_substrings": ["Rome"]
+    },
+    {
+      "question": "What is the population of the most populous member of the European Union?",
+      "expected_doc_id": "germany",
+      "expected_chunk_substrings": ["84 million", "populous"],
+      "expected_answer_substrings": ["84"]
+    },
+    {
+      "question": "Which Iberian country is famous for port wine?",
+      "expected_doc_id": "portugal",
+      "expected_chunk_substrings": ["port wine", "Douro"],
+      "expected_answer_substrings": ["Portugal"]
+    },
+    {
+      "question": "Which country borders both Belgium and Spain?",
+      "expected_doc_id": "france",
+      "expected_chunk_substrings": ["Belgium", "Spain"],
+      "expected_answer_substrings": ["France"]
+    },
+    {
+      "question": "Which European country has Berlin as its capital?",
+      "expected_doc_id": "germany",
+      "expected_chunk_substrings": ["Berlin", "capital"],
+      "expected_answer_substrings": ["Germany"]
+    },
+    {
+      "question": "Which country's borders include both Switzerland and Slovenia?",
+      "expected_doc_id": "italy",
+      "expected_chunk_substrings": ["Switzerland", "Slovenia"],
+      "expected_answer_substrings": ["Italy"]
+    }
+  ]
+}

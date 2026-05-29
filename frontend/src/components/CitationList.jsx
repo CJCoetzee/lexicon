@@ -12,13 +12,13 @@ const CitationItem = forwardRef(function CitationItem({ citation, highlighted },
           : 'border-accent-500'
       }`}
     >
-      <p className="text-ink-700 font-medium text-xs">
+      <p className="text-ink-700 dark:text-ink-200 font-medium text-xs">
         [{citation.n}] {citation.document_name}{' '}
         <span className="text-ink-400 font-normal">
           · chunk {citation.chunk_index} · {(citation.score * 100).toFixed(0)}%
         </span>
       </p>
-      <p className="text-ink-700 mt-1 line-clamp-3 text-xs">{citation.text}</p>
+      <p className="text-ink-700 dark:text-ink-200 mt-1 line-clamp-3 text-xs">{citation.text}</p>
     </li>
   )
 })
@@ -26,7 +26,7 @@ const CitationItem = forwardRef(function CitationItem({ citation, highlighted },
 export default function CitationList({ citations, citationRefs, highlightedN }) {
   return (
     <details className="text-xs" open={highlightedN != null}>
-      <summary className="cursor-pointer text-ink-400 hover:text-ink-700">
+      <summary className="cursor-pointer text-ink-400 hover:text-ink-700 dark:hover:text-ink-200">
         {citations.length} source{citations.length === 1 ? '' : 's'}
       </summary>
       <ul className="mt-2 space-y-2 pl-4">

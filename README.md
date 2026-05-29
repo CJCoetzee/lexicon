@@ -1,8 +1,8 @@
 # Lexicon
 
-A retrieval-augmented Q&A system for your documents. Upload PDFs or text files, ask questions, get answers with cited sources.
+A retrieval-augmented Q&A system for your documents. Upload PDFs or text files, ask questions, get answers with cited sources. Features streaming responses, multi-turn conversations, source-click citation jumping, document management, suggested starter questions, dark mode, and a measurement-driven evaluation harness.
 
-Built as the MSSE Capstone project for Quantic.
+Built as the MSSE Capstone project for Quantic. Four sprints (one above the handbook's minimum of three): foundations, core RAG, eval harness + reranker, then polish + extensions.
 
 ---
 

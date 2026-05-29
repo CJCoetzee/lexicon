@@ -120,8 +120,15 @@ class VectorStore:
     def count(self) -> int:
         return self._collection.count()
 
+    def delete_document(self, document_id: str) -> int:
+        """Remove all chunks belonging to a document. Returns the number deleted."""
+        before = self._collection.count()
+        self._collection.delete(where={"document_id": document_id})
+        after = self._collection.count()
+        return max(0, before - after)
+
     def reset(self) -> None:
-        """Wipe the collection. Used by tests; never exposed via the API."""
+        """Wipe the collection entirely."""
         self._client.delete_collection(_COLLECTION_NAME)
         self._collection = self._client.get_or_create_collection(
             name=_COLLECTION_NAME,
