@@ -12,7 +12,16 @@
       rel="stylesheet"
     />
   </head>
-  <body class="bg-ink-50 text-ink-900">
+  <body class="bg-ink-50 text-ink-900 dark:bg-ink-900 dark:text-ink-50 transition-colors">
+    <script>
+      // Apply the persisted theme before React mounts so we don't flash.
+      try {
+        const saved = localStorage.getItem('lexicon-theme');
+        const dark = saved ? saved === 'dark'
+                           : window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (dark) document.documentElement.classList.add('dark');
+      } catch (e) { /* localStorage unavailable */ }
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

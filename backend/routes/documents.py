@@ -1,12 +1,9 @@
 """Document upload + indexing endpoints.
 
-Sprint 1 scope: parse and return metadata.
-Sprint 2 scope: also chunk, embed, and index into the vector store so the
-document is queryable by /api/chat.
-
-Indexing happens inline on upload — fine for capstone-scale corpora and
-honest about latency; a future improvement (noted in DESIGN.md) is async
-indexing via a job queue.
+Sprint 1: parse and return metadata.
+Sprint 2: also chunk, embed, and index for retrieval.
+Sprint 4: add LLM-generated suggested questions on upload, plus delete /
+clear endpoints.
 """
 from __future__ import annotations
 
@@ -22,6 +19,7 @@ from services.parser import (
     supported_extensions,
 )
 from services.rag import get_rag_service
+from services.suggestions import generate_suggested_questions
 
 logger = logging.getLogger(__name__)
 documents_bp = Blueprint("documents", __name__)
@@ -49,15 +47,13 @@ def upload_document():
             ),
             400,
         )
-    except Exception as exc:  # noqa: BLE001 — log and return a generic 500
+    except Exception as exc:  # noqa: BLE001
         logger.exception("Failed to parse uploaded document")
         return jsonify({"error": "parse_failed", "message": str(exc)}), 500
 
     document_id = str(uuid.uuid4())
 
-    # Index the document. Failures here shouldn't fail the upload — we still
-    # have the parsed text and can re-index later. We surface the indexing
-    # status to the client so the UI can show it.
+    # Index. Failures here don't fail the upload -- we still parsed the text.
     chunks_indexed = 0
     indexing_error: str | None = None
     try:
@@ -67,6 +63,9 @@ def upload_document():
         logger.exception("Failed to index document %s", document_id)
         indexing_error = str(exc)
 
+    # Best-effort suggested questions. Empty list on failure.
+    suggested = generate_suggested_questions(text)
+
     body = {
         "id": document_id,
         "filename": upload.filename,
@@ -74,6 +73,7 @@ def upload_document():
         "uploaded_at": datetime.now(UTC).isoformat(),
         "preview": text[:500],
         "chunks_indexed": chunks_indexed,
+        "suggested_questions": suggested,
     }
     if indexing_error:
         body["indexing_error"] = indexing_error
@@ -83,3 +83,27 @@ def upload_document():
 @documents_bp.get("/documents/supported-types")
 def list_supported_types():
     return jsonify({"supported": sorted(supported_extensions())})
+
+
+@documents_bp.delete("/documents/<document_id>")
+def delete_document(document_id: str):
+    try:
+        from services.vector_store import get_vector_store
+        deleted = get_vector_store().delete_document(document_id)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Failed to delete document %s", document_id)
+        return jsonify({"error": "delete_failed", "message": str(exc)}), 500
+    return jsonify({"id": document_id, "chunks_removed": deleted}), 200
+
+
+@documents_bp.delete("/documents")
+def clear_all_documents():
+    try:
+        from services.vector_store import get_vector_store
+        store = get_vector_store()
+        before = store.count()
+        store.reset()
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Failed to clear documents")
+        return jsonify({"error": "clear_failed", "message": str(exc)}), 500
+    return jsonify({"chunks_removed": before}), 200

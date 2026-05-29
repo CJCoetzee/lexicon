@@ -27,6 +27,12 @@ US-12 Production deploy on Render
 US-13 CI on every PR
 US-14 Design and testing document
 US-15 Final demo recording
+US-16 Adversarial eval dataset where reranker wins
+US-17 Document delete and clear-all
+US-18 Suggested questions on upload
+US-19 Streaming chat responses
+US-20 Multi-turn conversation memory
+US-21 Dark mode toggle
 ```
 
 ---
@@ -165,3 +171,48 @@ Acceptance:
 **So that** I can score the presentation rubric.
 
 **Final week.**
+
+### US-16 Adversarial eval dataset where reranker wins
+**As a** developer
+**I want** an evaluation dataset where embedding-only retrieval underperforms
+**So that** the eval harness can demonstrate measurable lift from the reranker.
+
+Acceptance: dataset has ≥4 topically similar documents and ≥6 questions where the
+gold chunk is *not* the first result by pure embedding similarity.
+
+**Sprint 4.**
+
+### US-17 Document delete and clear-all
+**As a** user
+**I want to** remove an uploaded document, or clear all of them
+**So that** I can rebuild my corpus without restarting the server.
+
+**Sprint 4.**
+
+### US-18 Suggested questions on upload
+**As a** user
+**I want to** see three suggested questions after uploading a document
+**So that** I'm not staring at a blank chat input wondering what to ask.
+
+**Sprint 4.**
+
+### US-19 Streaming chat responses
+**As a** user
+**I want** the answer to type itself out token-by-token
+**So that** I see progress immediately and the UX feels responsive.
+
+**Sprint 4.**
+
+### US-20 Multi-turn conversation memory
+**As a** user
+**I want to** ask follow-up questions that reference earlier turns
+**So that** I can have a natural conversation rather than one-shot Q&A.
+
+**Sprint 4.**
+
+### US-21 Dark mode toggle
+**As a** user
+**I want** a dark theme I can toggle from the header
+**So that** the app is comfortable to use in low light.
+
+**Sprint 4.**

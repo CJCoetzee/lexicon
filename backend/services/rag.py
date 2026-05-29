@@ -1,13 +1,14 @@
 """RAG orchestration.
 
-Composes the chunker, embedding provider, vector store, and generation
-provider into two operations:
+Composes the chunker, embedding provider, vector store, optional reranker,
+and generation provider into three operations:
 
-  * `index_document(document_id, name, text)` — chunk → embed → upsert
-  * `answer(question, top_k)` — embed query → retrieve → prompt → generate
+  * index_document(...) -- chunk, embed, upsert
+  * answer(...)         -- non-streaming Q&A with citations
+  * answer_stream(...)  -- streaming Q&A yielding token + done events
 
-The orchestrator depends on Provider Protocols, not concrete classes, so
-tests inject fakes and the Sprint 3 eval harness swaps providers freely.
+All providers are injected as Protocols so tests use fakes and the eval
+harness can swap implementations.
 """
 from __future__ import annotations
 
@@ -25,18 +26,19 @@ from services.vector_store import Chunk, RetrievalResult, VectorStore, get_vecto
 logger = logging.getLogger(__name__)
 
 
-PROMPT_TEMPLATE = """You are Lexicon, a careful research assistant. Answer the user's
-question using ONLY the numbered context passages below. If the answer is
-not contained in the passages, say "I don't have enough information in the
-provided documents to answer that."
+PROMPT_TEMPLATE = """You are Lexicon, a careful research assistant. Answer
+the user's question using ONLY the numbered context passages below. If the
+answer is not contained in the passages, say "I don't have enough
+information in the provided documents to answer that."
 
 Cite supporting passages inline using square-bracket numbers like [1], [2].
-Cite multiple passages when relevant. Be concise.
+Cite multiple passages when relevant. Be concise. Take prior turns of the
+conversation into account when interpreting follow-up questions.
 
 CONTEXT
 {context}
-
-QUESTION
+{history_block}
+CURRENT QUESTION
 {question}
 
 ANSWER:"""
@@ -75,8 +77,6 @@ class RagService:
         self._store = store or get_vector_store()
         self._chunk_config = chunk_config or ChunkConfig()
         self._reranker = reranker
-        # When reranking, fetch more candidates than we'll keep so the
-        # reranker has room to reorder. Has no effect when reranker is None.
         self._retrieval_overfetch = max(1, retrieval_overfetch)
 
     # ------------------------------------------------------------------
@@ -84,7 +84,6 @@ class RagService:
     # ------------------------------------------------------------------
 
     def index_document(self, document_id: str, document_name: str, text: str) -> int:
-        """Chunk, embed, and store. Returns the number of chunks indexed."""
         chunks_text = chunk_text(text, self._chunk_config)
         if not chunks_text:
             return 0
@@ -105,25 +104,21 @@ class RagService:
         return len(chunks)
 
     # ------------------------------------------------------------------
-    # Retrieval + generation
+    # Answer (non-streaming)
     # ------------------------------------------------------------------
 
-    def answer(self, question: str, top_k: int = 5) -> AnswerResult:
+    def answer(
+        self,
+        question: str,
+        top_k: int = 5,
+        history: list[dict] | None = None,
+    ) -> AnswerResult:
         question = question.strip()
         if not question:
             raise ValueError("question must not be empty")
 
         start = time.perf_counter()
-
-        query_emb = self._embeddings.embed([question])[0]
-        fetch_k = top_k * self._retrieval_overfetch if self._reranker else top_k
-        results = self._store.query(query_emb, top_k=fetch_k)
-
-        # Optional reranking pass. Rerank the larger candidate set and keep
-        # the top-k by rerank score.
-        if self._reranker and results:
-            scored = self._reranker.rerank(question, results)
-            results = [s.result for s in scored[:top_k]]
+        results = self._retrieve(question, top_k)
 
         if not results:
             return AnswerResult(
@@ -136,22 +131,9 @@ class RagService:
                 retrieved=0,
             )
 
-        prompt = self._build_prompt(question, results)
+        prompt = self._build_prompt(question, results, history)
         raw_answer = self._generation.generate(prompt).strip()
-
-        cited_indices = _extract_cited_indices(raw_answer)
-        citations = [
-            Citation(
-                n=i + 1,
-                document_name=r.chunk.document_name,
-                document_id=r.chunk.document_id,
-                chunk_index=r.chunk.chunk_index,
-                text=r.chunk.text,
-                score=r.score,
-            )
-            for i, r in enumerate(results)
-            if (i + 1) in cited_indices or not cited_indices
-        ]
+        citations = _citations_from(results, raw_answer)
 
         return AnswerResult(
             answer=raw_answer,
@@ -161,18 +143,104 @@ class RagService:
         )
 
     # ------------------------------------------------------------------
+    # Answer (streaming)
+    # ------------------------------------------------------------------
+
+    def answer_stream(
+        self,
+        question: str,
+        top_k: int = 5,
+        history: list[dict] | None = None,
+    ):
+        question = question.strip()
+        if not question:
+            raise ValueError("question must not be empty")
+
+        start = time.perf_counter()
+        results = self._retrieve(question, top_k)
+
+        if not results:
+            msg = ("I don't have any documents indexed yet. Upload a document "
+                   "first, then ask again.")
+            yield {"type": "token", "text": msg}
+            yield {
+                "type": "done",
+                "citations": [],
+                "latency_ms": int((time.perf_counter() - start) * 1000),
+                "retrieved": 0,
+            }
+            return
+
+        prompt = self._build_prompt(question, results, history)
+
+        buffer: list[str] = []
+        for chunk in self._generation.generate_stream(prompt):
+            buffer.append(chunk)
+            yield {"type": "token", "text": chunk}
+
+        full_answer = "".join(buffer).strip()
+        citations = _citations_from(results, full_answer)
+        yield {
+            "type": "done",
+            "citations": [
+                {
+                    "n": c.n,
+                    "document_name": c.document_name,
+                    "document_id": c.document_id,
+                    "chunk_index": c.chunk_index,
+                    "text": c.text,
+                    "score": c.score,
+                }
+                for c in citations
+            ],
+            "latency_ms": int((time.perf_counter() - start) * 1000),
+            "retrieved": len(results),
+        }
+
+    # ------------------------------------------------------------------
     # Internals
     # ------------------------------------------------------------------
 
+    def _retrieve(self, question: str, top_k: int) -> list[RetrievalResult]:
+        query_emb = self._embeddings.embed([question])[0]
+        fetch_k = top_k * self._retrieval_overfetch if self._reranker else top_k
+        results = self._store.query(query_emb, top_k=fetch_k)
+        if self._reranker and results:
+            scored = self._reranker.rerank(question, results)
+            results = [s.result for s in scored[:top_k]]
+        return results
+
     @staticmethod
-    def _build_prompt(question: str, results: list[RetrievalResult]) -> str:
+    def _build_prompt(
+        question: str,
+        results: list[RetrievalResult],
+        history: list[dict] | None = None,
+    ) -> str:
         context_blocks = []
         for i, result in enumerate(results, start=1):
             context_blocks.append(
                 f"[{i}] (source: {result.chunk.document_name})\n{result.chunk.text}"
             )
         context = "\n\n".join(context_blocks)
-        return PROMPT_TEMPLATE.format(context=context, question=question)
+
+        history_block = ""
+        if history:
+            lines: list[str] = []
+            for turn in history[-6:]:  # cap to last 6 turns
+                role = (turn.get("role") or "").lower()
+                text = (turn.get("text") or "").strip()
+                if not text:
+                    continue
+                if role == "user":
+                    lines.append(f"User: {text}")
+                elif role == "assistant":
+                    lines.append(f"Assistant: {text}")
+            if lines:
+                history_block = "\nCONVERSATION SO FAR\n" + "\n".join(lines) + "\n"
+
+        return PROMPT_TEMPLATE.format(
+            context=context, history_block=history_block, question=question
+        )
 
 
 _CITATION_RE = re.compile(r"\[(\d+)\]")
@@ -180,6 +248,24 @@ _CITATION_RE = re.compile(r"\[(\d+)\]")
 
 def _extract_cited_indices(answer: str) -> set[int]:
     return {int(m.group(1)) for m in _CITATION_RE.finditer(answer)}
+
+
+def _citations_from(
+    results: list[RetrievalResult], answer_text: str
+) -> list[Citation]:
+    cited_indices = _extract_cited_indices(answer_text)
+    return [
+        Citation(
+            n=i + 1,
+            document_name=r.chunk.document_name,
+            document_id=r.chunk.document_id,
+            chunk_index=r.chunk.chunk_index,
+            text=r.chunk.text,
+            score=r.score,
+        )
+        for i, r in enumerate(results)
+        if (i + 1) in cited_indices or not cited_indices
+    ]
 
 
 _singleton: RagService | None = None

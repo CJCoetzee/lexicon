@@ -33,8 +33,8 @@ export default function UploadZone({ onUploaded }) {
   }
 
   return (
-    <div className="bg-white rounded-lg border border-ink-200 p-5">
-      <h2 className="font-semibold text-ink-900 mb-3">Upload a document</h2>
+    <div className="bg-white dark:bg-ink-900 rounded-lg border border-ink-200 dark:border-ink-700 p-5 transition-colors">
+      <h2 className="font-semibold text-ink-900 dark:text-ink-50 mb-3">Upload a document</h2>
 
       <label
         onDragOver={(e) => {
@@ -46,7 +46,7 @@ export default function UploadZone({ onUploaded }) {
         className={`block border-2 border-dashed rounded-md p-6 text-center cursor-pointer transition-colors ${
           isDragging
             ? 'border-accent-500 bg-accent-500/5'
-            : 'border-ink-200 hover:border-accent-500'
+            : 'border-ink-200 dark:border-ink-700 hover:border-accent-500 dark:hover:border-accent-500'
         }`}
       >
         <input
@@ -57,10 +57,10 @@ export default function UploadZone({ onUploaded }) {
           onChange={(e) => handleFile(e.target.files?.[0])}
         />
         {isUploading ? (
-          <p className="text-sm text-ink-700">Uploading…</p>
+          <p className="text-sm text-ink-700 dark:text-ink-200">Uploading…</p>
         ) : (
           <>
-            <p className="text-sm text-ink-700">
+            <p className="text-sm text-ink-700 dark:text-ink-200">
               Drop a file here, or <span className="text-accent-600 underline">browse</span>
             </p>
             <p className="text-xs text-ink-400 mt-1">PDF, TXT, or Markdown</p>
@@ -69,7 +69,7 @@ export default function UploadZone({ onUploaded }) {
       </label>
 
       {error && (
-        <p role="alert" className="mt-3 text-sm text-red-600">
+        <p role="alert" className="mt-3 text-sm text-red-600 dark:text-red-400">
           {error}
         </p>
       )}

@@ -1,8 +1,8 @@
 """Generation service.
 
 Wraps the Gemini chat model behind a Protocol so we can swap providers
-(Anthropic, Groq, local Llama) without changing call sites. Includes a small
-retry-with-backoff for transient per-minute rate limits.
+without changing call sites. Includes retry-with-backoff for transient
+per-minute rate limits, and a streaming variant for Sprint 4.
 """
 from __future__ import annotations
 
@@ -18,15 +18,16 @@ from config import config
 
 logger = logging.getLogger(__name__)
 
-
-# Daily quota errors aren't retryable; per-minute ones recover in seconds.
-# We bound total wait so a stuck retry can't hang the eval forever.
 _MAX_RETRIES = 3
 _MAX_BACKOFF_SECONDS = 60
 
 
 class GenerationProvider(Protocol):
     def generate(self, prompt: str) -> str: ...
+
+    def generate_stream(self, prompt: str):
+        """Yield response text chunks as they arrive from the model."""
+        ...
 
 
 class GeminiGenerationProvider:
@@ -54,10 +55,19 @@ class GeminiGenerationProvider:
                 )
                 time.sleep(delay)
 
+    def generate_stream(self, prompt: str):
+        """Stream Gemini's response chunk-by-chunk."""
+        stream = self._client.models.generate_content_stream(
+            model=self._model,
+            contents=prompt,
+        )
+        for chunk in stream:
+            text = getattr(chunk, "text", None)
+            if text:
+                yield text
+
 
 def _is_transient_rate_limit(exc: genai_errors.ClientError) -> bool:
-    """True for per-minute 429s. Daily-quota 429s aren't transient -- once
-    we've hit them no amount of waiting helps inside the run window."""
     if getattr(exc, "status_code", None) != 429:
         return False
     msg = str(exc)
@@ -73,7 +83,7 @@ def _extract_retry_delay(exc: genai_errors.ClientError) -> int:
     match = re.search(r'retryDelay["\']?\s*:\s*["\']?(\d+)', str(exc))
     if match:
         return int(match.group(1))
-    return 30  # fallback
+    return 30
 
 
 _singleton: GenerationProvider | None = None

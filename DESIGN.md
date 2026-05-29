@@ -312,14 +312,55 @@ move `lexicon-backend` to a paid tier and add a `disk:` block to
 Liveness is checked via `GET /healthz`. A future `/readyz` will also
 verify Gemini and Chroma connectivity.
 
-## 9. Open questions / future work
+## 9. Sprint 4 — Polish and extension (above minimum requirements)
+
+The capstone handbook requires at least three sprints. Sprint 4 was an
+optional fourth sprint to push the project above the minimum bar:
+
+- **US-16 Adversarial eval dataset** (`eval/datasets/hard.json`) — five
+  topically similar documents (European countries) and eight questions
+  phrased so the gold chunk shares keywords with non-gold documents. This
+  is the corpus where reranking can earn its keep, complementing the
+  "easy" dataset that already shows perfect baseline retrieval.
+- **US-17 Document delete and clear-all** — `DELETE /api/documents/:id` and
+  `DELETE /api/documents` plus per-item and bulk UI controls.
+- **US-18 Suggested questions on upload** (`services/suggestions.py`) — one
+  extra Gemini call per upload to generate three starter questions,
+  surfaced as clickable chips. Removes the "blank input" cold-start.
+- **US-19 Streaming chat responses** — Server-Sent Events endpoint
+  (`POST /api/chat/stream`) backed by `generate_content_stream` on the
+  Gemini client. The UI consumes the SSE via `fetch` + `ReadableStream` and
+  appends tokens to the in-flight assistant message, with a blinking caret
+  while streaming.
+- **US-20 Multi-turn conversation memory** — frontend keeps the message
+  history (already did) and sends the last six turns with each request;
+  the prompt template grew a `CONVERSATION SO FAR` block so follow-up
+  questions ("tell me more about that") resolve correctly.
+- **US-21 Dark mode toggle** — `darkMode: 'class'` in Tailwind, `dark:`
+  variants on every component, persisted to `localStorage`, with a no-flash
+  inline script in `index.html` that applies the saved theme before React
+  mounts.
+
+Sprint 4 work touches `routes/chat.py` (streaming endpoint), `services/llm.py`
+(generate_stream + retry-with-backoff for transient 429s),
+`services/rag.py` (answer_stream + history-aware prompt construction),
+`services/suggestions.py`, `services/vector_store.py` (delete_document),
+plus the matching frontend changes in `ChatPanel.jsx`, `DocumentList.jsx`,
+`UploadZone.jsx`, `Header.jsx`, and a new `Header` toggle component.
+
+## 10. Open questions / future work
 
 - **Auth:** currently single-tenant, no auth. Adding Auth0 or Clerk would
   let multiple users keep separate corpora.
-- **Streaming:** chat responses should stream token-by-token in Sprint 2 for
-  better UX.
-- **Chunk strategy ablation:** Sprint 3 will A/B fixed-size vs. recursive
-  vs. semantic chunking using the eval harness.
-- **Reranking:** a cross-encoder reranker (e.g. `bge-reranker-base`) on top
-  of the embedding retrieval is a likely Sprint 3 improvement if recall@k
-  metrics warrant it.
+- **Chunk strategy ablation:** A future eval comparing fixed-size vs.
+  recursive vs. semantic chunking using the same harness.
+- **Cross-encoder reranker:** swap Gemini-as-reranker for a local
+  `bge-reranker-base` cross-encoder to compare latency and quality on the
+  adversarial dataset.
+- **Async indexing:** uploads currently block on embed-and-store. A job
+  queue with a background worker would lift user-perceived latency for
+  long documents.
+- **Persistent Chroma in production:** the free-tier Render deployment
+  uses ephemeral storage. Moving to a paid tier with a mounted disk would
+  let users keep their corpus across service restarts (config knob already
+  in place; no code change needed).
