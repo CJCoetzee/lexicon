@@ -54,7 +54,14 @@ export default function UploadZone({ onUploaded }) {
           type="file"
           accept=".pdf,.txt,.md"
           className="hidden"
-          onChange={(e) => handleFile(e.target.files?.[0])}
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            // Reset the input value so re-selecting the same file still fires
+            // onChange. Without this, picking the same file twice (e.g. after a
+            // delete) is silently ignored by the browser.
+            e.target.value = ''
+            handleFile(file)
+          }}
         />
         {isUploading ? (
           <p className="text-sm text-ink-700 dark:text-ink-200">Uploading…</p>
