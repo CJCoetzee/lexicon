@@ -1,43 +1,6 @@
 # Trello Board — Lexicon
 
-This file lists the user stories and tasks that populate the Trello Scrum
-board for Lexicon. To populate Trello quickly, click "Add a card" on a list
-and paste the card titles — Trello creates one card per line. Then open each
-card to paste the acceptance criteria into its description.
-
-Board: https://trello.com/b/69f63c86cb80f47ed2c384bd/lexicon
-
----
-
-## List: Backlog (paste this block of titles)
-
-```
-US-1  Upload PDF/TXT/MD documents
-US-2  See list of uploaded documents
-US-3  Ask a question and receive an answer
-US-4  See citations to source passages
-US-5  Streaming chat responses
-US-6  Source highlighting on citation click
-US-7  Eval harness — retrieval recall@k
-US-8  Eval harness — answer faithfulness (LLM-as-judge)
-US-9  Eval harness — latency and cost tracking
-US-10 Retrieval improvement based on eval results
-US-11 Full unit + integration test coverage
-US-12 Production deploy on Render
-US-13 CI on every PR
-US-14 Design and testing document
-US-15 Final demo recording
-US-16 Adversarial eval dataset where reranker wins
-US-17 Document delete and clear-all
-US-18 Suggested questions on upload
-US-19 Streaming chat responses
-US-20 Multi-turn conversation memory
-US-21 Dark mode toggle
-```
-
----
-
-## Card details (paste into each card's description after creation)
+## Card details 
 
 ### US-1 Upload PDF/TXT/MD documents
 **As a** user
