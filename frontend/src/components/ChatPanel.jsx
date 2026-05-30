@@ -166,15 +166,23 @@ function Message({ message }) {
   // Per-message refs so a citation click in this message highlights only
   // this message's citation list.
   const citationRefs = useRef({})
+  const detailsRef = useRef(null)
   const [highlightedN, setHighlightedN] = useState(null)
 
   function handleCitationClick(n) {
-    setHighlightedN(n)
-    const el = citationRefs.current[n]
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    // Force the source panel open. It's uncontrolled after this -- the
+    // user closes it themselves via the summary toggle.
+    if (detailsRef.current && !detailsRef.current.open) {
+      detailsRef.current.open = true
     }
-    // Clear highlight after a beat so it fades back.
+    setHighlightedN(n)
+    // Scroll the cited entry into view on the next frame so the panel
+    // has finished expanding before we measure.
+    requestAnimationFrame(() => {
+      const el = citationRefs.current[n]
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    })
+    // Fade the highlight back after a beat. Panel stays open.
     setTimeout(() => setHighlightedN(null), 1500)
   }
 
@@ -204,6 +212,7 @@ function Message({ message }) {
           citations={message.citations}
           citationRefs={citationRefs}
           highlightedN={highlightedN}
+          detailsRef={detailsRef}
         />
       )}
       {message.latencyMs != null && (
