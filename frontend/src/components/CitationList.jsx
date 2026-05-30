@@ -23,9 +23,9 @@ const CitationItem = forwardRef(function CitationItem({ citation, highlighted },
   )
 })
 
-export default function CitationList({ citations, citationRefs, highlightedN }) {
+export default function CitationList({ citations, citationRefs, highlightedN, detailsRef }) {
   return (
-    <details className="text-xs" open={highlightedN != null}>
+    <details className="text-xs" ref={detailsRef}>
       <summary className="cursor-pointer text-ink-400 hover:text-ink-700 dark:hover:text-ink-200">
         {citations.length} source{citations.length === 1 ? '' : 's'}
       </summary>
