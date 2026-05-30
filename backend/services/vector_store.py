@@ -120,6 +120,30 @@ class VectorStore:
     def count(self) -> int:
         return self._collection.count()
 
+    def list_documents(self) -> list[dict]:
+        """Return one entry per indexed document with chunk count.
+
+        Aggregates by `document_id` from chunk metadata. Used by the API to
+        rehydrate the frontend's document list after a page refresh.
+        """
+        try:
+            result = self._collection.get(include=["metadatas"])
+        except Exception:  # noqa: BLE001
+            return []
+        metas = result.get("metadatas", []) or []
+        by_id: dict[str, dict] = {}
+        for meta in metas:
+            doc_id = meta.get("document_id")
+            if not doc_id:
+                continue
+            entry = by_id.setdefault(doc_id, {
+                "id": doc_id,
+                "filename": meta.get("document_name", "unknown"),
+                "chunks_indexed": 0,
+            })
+            entry["chunks_indexed"] += 1
+        return list(by_id.values())
+
     def delete_document(self, document_id: str) -> int:
         """Remove all chunks belonging to a document. Returns the number deleted."""
         before = self._collection.count()
