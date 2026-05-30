@@ -1,12 +1,29 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Header from './components/Header.jsx'
 import UploadZone from './components/UploadZone.jsx'
 import DocumentList from './components/DocumentList.jsx'
 import ChatPanel from './components/ChatPanel.jsx'
+import { api } from './api.js'
 
 export default function App() {
   const [documents, setDocuments] = useState([])
   const [suggestedQuestions, setSuggestedQuestions] = useState([])
+
+  // Rehydrate from the backend on mount so a page refresh doesn't lose the
+  // user's already-indexed documents. Silently tolerates a backend that's
+  // cold-starting or unreachable -- empty list is the right default.
+  useEffect(() => {
+    let cancelled = false
+    api
+      .listDocuments()
+      .then((res) => {
+        if (cancelled) return
+        const docs = res?.documents ?? []
+        if (docs.length) setDocuments(docs)
+      })
+      .catch(() => { /* offline / cold start; ignore */ })
+    return () => { cancelled = true }
+  }, [])
 
   function handleUploaded(doc) {
     setDocuments((prev) => [doc, ...prev])

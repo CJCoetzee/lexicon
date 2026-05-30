@@ -43,3 +43,30 @@ def test_supported_types_endpoint_lists_extensions(client):
     body = response.get_json()
     assert ".pdf" in body["supported"]
     assert ".txt" in body["supported"]
+
+
+def test_list_documents_returns_aggregated_entries(client, monkeypatch):
+    class _FakeStore:
+        def list_documents(self):
+            return [
+                {"id": "d1", "filename": "France.txt", "chunks_indexed": 2},
+                {"id": "d2", "filename": "Japan.txt",  "chunks_indexed": 1},
+            ]
+
+    monkeypatch.setattr("services.vector_store.get_vector_store", lambda: _FakeStore())
+    response = client.get("/api/documents")
+    assert response.status_code == 200
+    body = response.get_json()
+    assert {d["id"] for d in body["documents"]} == {"d1", "d2"}
+    assert body["documents"][0]["chunks_indexed"] >= 1
+
+
+def test_list_documents_handles_store_failure(client, monkeypatch):
+    class _BadStore:
+        def list_documents(self):
+            raise RuntimeError("chroma offline")
+
+    monkeypatch.setattr("services.vector_store.get_vector_store", lambda: _BadStore())
+    response = client.get("/api/documents")
+    assert response.status_code == 500
+    assert response.get_json()["error"] == "list_failed"

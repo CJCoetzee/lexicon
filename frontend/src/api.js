@@ -44,6 +44,10 @@ export const api = {
     return request('/api/documents/supported-types')
   },
 
+  listDocuments() {
+    return request('/api/documents')
+  },
+
   deleteDocument(id) {
     return request(`/api/documents/${encodeURIComponent(id)}`, { method: 'DELETE' })
   },

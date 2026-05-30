@@ -64,8 +64,9 @@ export default function DocumentList({ documents, onDelete, onClearAll }) {
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-ink-900 dark:text-ink-50 truncate">{doc.filename}</p>
               <p className="text-xs text-ink-400">
-                {doc.char_count.toLocaleString('en-US')} chars
-                {doc.chunks_indexed != null && ` · ${doc.chunks_indexed} chunks`}
+                {doc.char_count != null && `${doc.char_count.toLocaleString('en-US')} chars`}
+                {doc.char_count != null && doc.chunks_indexed != null && ' · '}
+                {doc.chunks_indexed != null && `${doc.chunks_indexed} chunks`}
               </p>
             </div>
             <button

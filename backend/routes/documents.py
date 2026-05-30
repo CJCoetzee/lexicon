@@ -85,6 +85,22 @@ def list_supported_types():
     return jsonify({"supported": sorted(supported_extensions())})
 
 
+@documents_bp.get("/documents")
+def list_documents():
+    """Return the documents currently indexed in the vector store.
+
+    Used by the frontend to rehydrate its document list on page mount so
+    refreshes don't lose the user's session.
+    """
+    try:
+        from services.vector_store import get_vector_store
+        docs = get_vector_store().list_documents()
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Failed to list documents")
+        return jsonify({"error": "list_failed", "message": str(exc)}), 500
+    return jsonify({"documents": docs}), 200
+
+
 @documents_bp.delete("/documents/<document_id>")
 def delete_document(document_id: str):
     try:
