@@ -19,7 +19,6 @@ takes ~30–60s to wake the backend. Subsequent requests are fast.
 - **GitHub repo:** https://github.com/CJCoetzee/lexicon
 - **Trello Scrum board:** https://trello.com/b/69f63c86cb80f47ed2c384bd/lexicon
 - **Design and testing document:** [DESIGN.md](./DESIGN.md)
-- **Final demo recording:** _(to be added after final submission)_
 
 ## Tech stack
 
@@ -96,7 +95,3 @@ cd backend && pytest
 # Frontend
 cd frontend && npm test
 ```
-
-## License
-
-MIT (see [LICENSE](./LICENSE))
